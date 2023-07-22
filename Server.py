@@ -71,7 +71,6 @@ class Server:
         player = self.get_player(player_id)
         socket = player["socket"]
         self.send_player_info(player_id)
-        self.update_and_send_player_list()
         while True:
             try:
                 data = socket.recv(2048)
@@ -91,6 +90,7 @@ class Server:
 
                     if message_parts[0] == "Initial":
                         print("正在给玩家初始化棋盘...."+str(player))
+                        self.update_and_send_player_list()
                         if len(self.surface_list)>0:
                             for surface in self.surface_list:
                                 time.sleep(0.01)
