@@ -35,7 +35,6 @@ class Client:
         self.allow_move = False
         self.waiting_for_drawing = False
         self.grid = Grids()  # Create an instance of Grids class
-        # self.grid = self.grid_instance.init_grid()  # Call init_grid method of the instance
         self.player_list = []
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.connect((host, port))
@@ -79,7 +78,7 @@ class Client:
             self.base64_to_surface(message)
 
         elif message_type == "PLAYERLIST":
-            self.update_player_list(message)  # This function should be implemented in your UI code
+            self.update_player_list(message) 
 
         if message_type == "Grid_ALLOWED":
             self.allow_move = True
