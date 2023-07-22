@@ -2,6 +2,16 @@ import pygame
 import io
 import base64
 import time
+import os
+
+COLOR = {
+    (255, 255, 255):'WHITE',
+    (0, 0, 0):'BLACK',
+    (255, 0, 0):'RED',
+    (0, 255, 0):'GREEN',
+    (0, 0, 255):'BLUE',
+    (255, 204, 0):'YELLOW',
+}
 
 # Define some colors
 WHITE = (255, 255, 255)
@@ -53,6 +63,7 @@ def surface_to_base64(surface):
 class Grids:    
     def __init__(self):
         self.grid = self.init_grid()
+        self.draw_pos = (WINDOW_SIZE[0] // 2 - WIDTH, WINDOW_SIZE[1] - HEIGHT * 4)
 
     def init_grid(self):
         grid = []
@@ -77,17 +88,23 @@ class Grids:
     def draw_grid(self, screen):
         for row in range(8):
             for column in range(8):
-                pygame.draw.rect(screen, WHITE, [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN, WIDTH, HEIGHT])
+                pygame.draw.rect(screen, self.grid[row][column]['color'], [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN, WIDTH, HEIGHT])
                 screen.blit(pygame.transform.scale(self.grid[row][column]["drawing"], (WIDTH, HEIGHT)), [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN])
 
     # 在底部放大所选窗口，screen包含了绘图
-    def draw_selected_cell(self, screen, drawing_area):
+    def draw_selected_cell(self, screen, drawing_area, selected_cell):
        
         # 绘制grid的背景
-        pygame.draw.rect(screen, WHITE, [WINDOW_SIZE[0] // 2 - WIDTH, WINDOW_SIZE[1] - HEIGHT * 2, WIDTH * 2, HEIGHT * 2])
+        pygame.draw.rect(screen, WHITE, [self.draw_pos[0], self.draw_pos[1], WIDTH * 2, HEIGHT * 2])
         
         # 绘制用户的回绘制
-        screen.blit(pygame.transform.scale(drawing_area, (WIDTH * 2, HEIGHT * 2)), (WINDOW_SIZE[0] // 2 - WIDTH, WINDOW_SIZE[1] - HEIGHT * 2))
+        screen.blit(pygame.transform.scale(drawing_area, (WIDTH * 2, HEIGHT * 2)), self.draw_pos)
+
+        row, column = selected_cell
+
+        screen.blit(pygame.transform.scale(drawing_area, (WIDTH, HEIGHT)),
+                    [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN])
+
 
 class Player:
     def __init__(self, client):
@@ -97,6 +114,7 @@ class Player:
         self.mouse_pressed = False
         self.selected_cell = None
         self.drawing_area = pygame.Surface((WIDTH * 2, HEIGHT * 2))
+        self.info_area = pygame.Surface((WIDTH * 4, HEIGHT * 4))
 
     def send_confirm_info(self,row, column):
         Message = f"Confirm,{row},{column},{self.client.player_id}"
@@ -122,7 +140,7 @@ class Player:
                 self.drawing_area.fill(WHITE)
                 self.drawing_area.blit(pygame.transform.scale(grids_instance.grid[row][column]["drawing"], (WIDTH * 2, HEIGHT * 2)), (0, 0))
 
-        elif self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (WINDOW_SIZE[1] - HEIGHT * 2 <= pos[1]):
+        elif self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (WINDOW_SIZE[1] - HEIGHT * 4 <= pos[1]):
             self.mouse_pressed = True
 
     def handle_mouse_click(self, grid):
@@ -147,15 +165,23 @@ class Player:
 
     # 在底部放大方框里面作画
     def draw_on_drawing_area(self, pos):
-        if self.client.allow_move and self.mouse_pressed and self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (WINDOW_SIZE[1] - HEIGHT * 2 <= pos[1]):
-            pygame.draw.circle(self.drawing_area, self.color, (pos[0] - WINDOW_SIZE[0] // 2 + WIDTH, pos[1] - WINDOW_SIZE[1] + HEIGHT * 2), 5)
-    
+        if self.client.allow_move and self.mouse_pressed and self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (WINDOW_SIZE[1] - HEIGHT * 4 <= pos[1]):
+            pygame.draw.circle(self.drawing_area, self.color, (pos[0] - WINDOW_SIZE[0] // 2 + WIDTH, pos[1] - WINDOW_SIZE[1] + HEIGHT * 4), 5)
+
+    def draw_info(self):
+        self.info_area.fill(WHITE)
+        font = pygame.font.Font(None, 20)
+        for index,(id, color) in enumerate(self.client.player_list):
+            self.info_area.blit(font.render(f'player id:{id}, color : {COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
+
     # 画出每一个单元格
     def draw(self, screen, grids_instance):
         screen.fill(BLACK)
-        if self.selected_cell:
-            grids_instance.draw_selected_cell(screen, self.drawing_area)
         grids_instance.draw_grid(screen)
+        if self.selected_cell:
+            grids_instance.draw_selected_cell(screen, self.drawing_area, self.selected_cell)
+        self.draw_info()
+        screen.blit(self.info_area, (WINDOW_SIZE[0]-MARGIN-6*WIDTH, MARGIN+2*HEIGHT))
 
 
 class Game:
@@ -191,4 +217,3 @@ def run_game(grid,client = None):
     msg = f"Initial,{client.player_id}"
     client.send_message(msg)
     game.run()
-

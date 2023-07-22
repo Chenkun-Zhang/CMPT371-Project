@@ -32,6 +32,14 @@ class Server:
             print(f"玩家 {player_id} 连接成功")
             threading.Thread(target=self.handle_player, args=(player_id,)).start()
 
+    def update_and_send_player_list(self):
+        player_list_message = "PLAYERLIST,|"
+        for player in self.players:
+            player_list_message += f"{player['id']}-{player['color']}|"
+        player_list_message = player_list_message[:-1]  # Remove the trailing comma
+        for player in self.players:
+            player["socket"].send(player_list_message.encode())
+
     def grid_remove(self,id):
         if len(self.locked_grid) > 0 :
             self.locked_grid = [cell for cell in self.locked_grid if cell[2] != id]
@@ -63,6 +71,7 @@ class Server:
         player = self.get_player(player_id)
         socket = player["socket"]
         self.send_player_info(player_id)
+        self.update_and_send_player_list()
         while True:
             try:
                 data = socket.recv(2048)

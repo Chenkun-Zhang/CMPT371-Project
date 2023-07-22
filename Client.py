@@ -36,6 +36,7 @@ class Client:
         self.waiting_for_drawing = False
         self.grid = Grids()  # Create an instance of Grids class
         # self.grid = self.grid_instance.init_grid()  # Call init_grid method of the instance
+        self.player_list = []
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.connect((host, port))
         threading.Thread(target=self.receive_data).start()
@@ -77,11 +78,25 @@ class Client:
         elif "Surface" in message_type:
             self.base64_to_surface(message)
 
+        elif message_type == "PLAYERLIST":
+            self.update_player_list(message)  # This function should be implemented in your UI code
+
         if message_type == "Grid_ALLOWED":
             self.allow_move = True
             
         elif message_type == "Grid_NOT_ALLOWED":
             self.allow_move = False
+
+    def update_player_list(self, message):
+        player_list = message.split('|')[1:]
+        self.player_list.clear()
+        for infor in player_list:
+            if infor:
+                player_id, player_color = infor.split('-')
+                player_id = int(player_id)
+                self.player_list.append((player_id,player_colors[player_id]))
+        print('更新playerlist:')
+        print('\n'.join([f'玩家ID为:{item[0]}, 颜色为:{item[1]}'for item in self.player_list]))
 
     def send_doodle(self, doodle_info):
         # Encode doodle info as a JSON string
