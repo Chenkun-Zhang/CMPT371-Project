@@ -158,6 +158,7 @@ def get_lan_ip():
 
 lan_ip = get_lan_ip()
 print(lan_ip)
+
 server = Server(lan_ip, 12346, 3)
 server.start()
 
