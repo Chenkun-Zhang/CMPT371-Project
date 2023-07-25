@@ -146,5 +146,21 @@ class Server:
         return None
 
 # 测试服务器
-server = Server("localhost", 12346, 3)
+def get_lan_ip():
+    try:
+        host_name = socket.gethostname()
+        host_ip = socket.gethostbyname(host_name)
+        print("Hostname :  ", host_name)
+        print("IP : ", host_ip)
+        return host_ip
+    except:
+        print("Unable to get Hostname and IP")
+lan_ip = input("Please input the ip addr,(press 1 use local host)")
+if lan_ip == "1":
+    lan_ip = "localhost"
+else:
+    lan_ip = get_lan_ip()
+print(lan_ip)
+server = Server(lan_ip, 12346, 3)
 server.start()
+

@@ -111,7 +111,11 @@ class Client:
         self.server_socket.send(message.encode())
 
 # 创建客户端实例
-client = Client("localhost", 12346)
+ip = input("Please input the ip addr,(press 1 use local host)")
+if ip == "1":
+    ip = "localhost"
+    
+client = Client(ip, 12346)
 
 # 向服务器发送连接请求
 client.send_message("CONNECT")
