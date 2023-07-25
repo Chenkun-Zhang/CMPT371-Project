@@ -111,11 +111,21 @@ class Client:
         self.server_socket.send(message.encode())
 
 # 创建客户端实例
+def get_lan_ip():
+    try:
+        host_name = socket.gethostname()
+        host_ip = socket.gethostbyname(host_name)
+        print("Hostname :  ", host_name)
+        print("IP : ", host_ip)
+        return host_ip
+    except:
+        print("Unable to get Hostname and IP")
+
 ip = input("Please input the ip addr,(press 1 use local host)")
 if ip == "1":
-    ip = "localhost"
-    
-client = Client(ip, 12346)
+    ip = get_lan_ip()
+
+client = Client("ip", 12346)
 
 # 向服务器发送连接请求
 client.send_message("CONNECT")
