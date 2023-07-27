@@ -93,7 +93,7 @@ class Server:
                         self.update_and_send_player_list()
                         if len(self.surface_list)>0:
                             for surface in self.surface_list:
-                                time.sleep(0.01)
+                                time.sleep(0.1)
                                 player["socket"].send(surface)
                         print("初始化完毕....")
 
@@ -159,6 +159,6 @@ def get_lan_ip():
 lan_ip = get_lan_ip()
 print(lan_ip)
 
-server = Server(lan_ip, 12346, 3)
+server = Server(lan_ip, 12345, 3)
 server.start()
 
