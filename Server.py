@@ -45,7 +45,7 @@ class Server:
             self.locked_grid = [cell for cell in self.locked_grid if cell[2] != id]
 
     def grid_check(self,row,column,id):
-        print(self.locked_grid)
+        print("First",self.locked_grid)
         new_cell = (row, column, id)
         self.grid_remove(id)
 
@@ -60,9 +60,9 @@ class Server:
 
         self.locked_grid.append(new_cell)
 
-        print(self.locked_grid)
-        print(new_cell)
-        print(self.confirmed_grid)
+        print("Sencond",self.locked_grid)
+        print("Third",new_cell)
+        print("Fourth",self.confirmed_grid)
 
         print("The flag is: "+ str(flag))
         return flag
@@ -79,12 +79,17 @@ class Server:
                     if("Surface" in message):
                         print("给所有user发送消息ing")
                         for other_player in self.players:
-                            print(data)
+                            print("Fifth",data)
                             other_player["socket"].send(data)
+                        if self.is_game_over():
+                            for other_player in self.players:
+                                if other_player["id"] != player_id:
+                                    other_player["socket"].send(data)
+                            self.handle_game_over()
                         print("发送结束 END")
 
                     # 
-                    print(message)
+                    print("Sixth",message)
                     message_parts = message.split(",")
                     print("msg[0] is "+ message_parts[0])
 
@@ -102,7 +107,10 @@ class Server:
                         cell = (row, column,id)
                         if cell not in self.confirmed_grid:
                             self.confirmed_grid.append(cell)
-                        print(len(self.confirmed_grid))
+                        print("Seventh",len(self.confirmed_grid))
+
+
+
 
                     elif message_parts[0] == "gridRequest":
                         row, column, player_id= int(message_parts[1]), int(message_parts[2]), int(message_parts[3])
@@ -116,7 +124,9 @@ class Server:
                         if data not in self.surface_list:
                             self.surface_list.append(data)
                             print("len of surface is: "+str(len(self.surface_list)))
-                        
+                    # elif "Surface" in message_parts[0] and self.is_game_over():
+                    #     self.handle_game_over()
+
                 else:
                     self.remove_player(player_id)
                     self.grid_remove(player_id)
@@ -135,9 +145,14 @@ class Server:
         player["socket"].send(message.encode())
 
     def remove_player(self, player_id):
-        player = self.get_player(player_id)
-        self.players.remove(player)
-        player["socket"].close()
+        # player = self.get_player(player_id)
+        # self.players.remove(player)
+        # player["socket"].close()
+        with self.lock:
+            player = self.get_player(player_id)
+            if player:
+                self.players.remove(player)
+                player["socket"].close()
 
     def get_player(self, player_id):
         for player in self.players:
@@ -145,6 +160,116 @@ class Server:
                 return player
         return None
 
+    def is_game_over(self):
+        """
+
+        :return:
+        """
+
+        confirmed_grid = len(self.confirmed_grid)
+        #
+        leave_grides = 64 - confirmed_grid
+        print("leave",leave_grides)
+        my_dict = self.count_player_grids()  # get player grids
+        print("player data",my_dict)
+        sencond_value = self.get_second_largest(my_dict)
+        print("the sencond player",sencond_value)
+        if leave_grides != 0:
+
+            if sencond_value:
+                max_value = max(my_dict.values())
+                if not sencond_value + int(leave_grides) >= max_value:
+                    return True
+        else:
+            return True
+
+        # return len(self.confirmed_grid) == 5
+
+    def handle_game_over(self):
+        """
+
+        :return:
+        """
+        print("game over")
+        print("player data:",self.count_player_grids())  #
+        winner = self.getwinner()
+        print("Eighth",self.getwinner())  # get winner
+        self.send_game_over_to_clients(winner)  # send msg
+        self.close_all_connections()  # close connections
+
+    def close_all_connections(self):
+        """
+        关闭所有链接
+        :return:
+        """
+        for player in self.players:
+            player["socket"].close()
+
+        self.players = []
+        print("所有玩连接已断开")
+
+    def count_player_grids(self):
+        """
+        统计用户的格子数
+        :return:
+        """
+        player_grids = {}
+        for cell in self.confirmed_grid:
+            player_id = cell[2]
+            if player_id in player_grids:
+                player_grids[player_id] += 1
+            else:
+                player_grids[player_id] = 1
+        return player_grids
+
+
+
+
+
+    def getwinner(self):
+        """
+
+        :return:winner
+        """
+        playerdata = self.count_player_grids()
+        # max_item = max(playerdata.items(), key=lambda x: x[1])
+        max_list = []
+        max_value = max(playerdata.values())
+        for m, n in playerdata.items():
+            if n == max_value:
+                max_list.append(m)
+        winner = ''
+        for i in max_list:
+            winner = winner + " " + str(i) + " "
+
+        return winner
+    def send_game_over_to_clients(self, winner):
+        """
+        send game over to clinets
+        :param winner: the winner text
+        """
+
+        message = f"GAME_OVER,{winner}"
+        print("ninth",message[1])
+        for player in self.players:
+            player["socket"].send(message.encode())
+    def get_second_largest(self,dictionary):
+        if len(dictionary) < 2:
+            return None
+
+        sorted_values = sorted(dictionary.values(), reverse=True)
+        second_largest_value = None
+
+        for value in sorted_values:
+            if value < max(sorted_values):
+                second_largest_value = value
+                break
+
+        if second_largest_value is None:
+            return None
+
+        # second_largest_keys = [key for key, value in dictionary.items() if value == second_largest_value]
+        return second_largest_value
 # 测试服务器
 def get_lan_ip():
     try:
@@ -159,6 +284,6 @@ def get_lan_ip():
 lan_ip = get_lan_ip()
 print(lan_ip)
 
-server = Server(lan_ip, 12345, 3)
+server = Server(lan_ip, 12346, 3)
 server.start()
 

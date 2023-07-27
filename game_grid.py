@@ -16,7 +16,7 @@ COLOR = {
 # Define some colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-
+BLUE = (0,0,255)
 # This sets the WIDTH and HEIGHT of each grid location & window size
 WIDTH = 50
 HEIGHT = 50
@@ -185,11 +185,13 @@ class Player:
 
 
 class Game:
-    def __init__(self, screen, player, grids_instance):
+    def __init__(self, screen, player, grids_instance,client):
         self.screen = screen
         self.player = player
         self.grids_instance = grids_instance
         self.clock = pygame.time.Clock()
+        self.client = client
+
 
     def run(self):
         done = False
@@ -205,15 +207,32 @@ class Game:
             pos = pygame.mouse.get_pos()
             self.player.draw_on_drawing_area(pos)
             self.player.draw(self.screen, self.grids_instance)
+            if not self.client.game_status:
+                self.player.draw_on_drawing_area(pos)
+                self.player.draw(self.screen, self.grids_instance)
+                self.display_game_over(self.client.winner)  #
+
             pygame.display.flip()
             self.clock.tick(60)
         pygame.quit()
+#game over show
+    def display_game_over(self,winner):
+        font = pygame.font.Font(None, 100)
+        text = font.render("GAME_OVER", True, BLUE)
+        text_rect = text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
+        self.screen.blit(text, text_rect)
+        #show winner
+        winner_font = pygame.font.Font(None, 50)
+        winner_text = winner_font.render(f"winner is : {winner}", True, BLUE)
+        winner_text_rect = winner_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2 + 50))
+        self.screen.blit(winner_text, winner_text_rect)
 
+        pygame.display.flip()
 def run_game(grid,client = None):
     pygame.init()
     player = Player(client)
     screen = pygame.display.set_mode(WINDOW_SIZE)
-    game = Game(screen, player, grid)
+    game = Game(screen, player, grid,client)
     msg = f"Initial,{client.player_id}"
     client.send_message(msg)
     game.run()

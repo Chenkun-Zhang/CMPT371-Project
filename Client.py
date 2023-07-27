@@ -36,6 +36,8 @@ class Client:
         self.waiting_for_drawing = False
         self.grid = Grids()  # Create an instance of Grids class
         self.player_list = []
+        self.game_status = True  # set game_status=True
+        self.winner = None  # set winner =NONE
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.connect((host, port))
         threading.Thread(target=self.receive_data).start()
@@ -85,6 +87,12 @@ class Client:
             
         elif message_type == "Grid_NOT_ALLOWED":
             self.allow_move = False
+        elif message_type == "GAME_OVER":
+            winner_id = str(message_parts[1])
+            print(f"游戏结束，玩家 {winner_id} 获胜！")
+            #update game_staus,winner
+            self.game_status=False
+            self.winner =winner_id
 
     def update_player_list(self, message):
         player_list = message.split('|')[1:]
