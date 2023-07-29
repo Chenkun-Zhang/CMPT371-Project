@@ -126,7 +126,7 @@ class Server:
                         self.update_and_send_player_list()
                         if len(self.surface_list) > 0:
                             for surface in self.surface_list:
-                                time.sleep(0.01)
+                                time.sleep(0.5)
                                 player["socket"].send(surface)
                         print("初始化完毕....")
 
