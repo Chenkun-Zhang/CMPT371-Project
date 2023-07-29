@@ -9,9 +9,9 @@ class Server:
         self.confirmed_grid = []
         self.locked_grid = []
         self.surface_list = []
-        # 根据名字保存对应玩家的ID
+        # Save the corresponding player's ID based on the name
         self.players_id = {}
-        # 根据名字保存对应玩家是否在线
+        # Save the corresponding player's online status based on their name
         self.is_connect = {}
         self.host = host
         self.port = port
@@ -23,23 +23,23 @@ class Server:
         self.server_socket.listen(max_players)
 
     def start(self):
-        print("服务器已启动,等待玩家连接...")
+        print("The server has started, waiting for players to connect...")
         while True:
             client_socket, client_address = self.server_socket.accept()
-            # 获取玩家的名称
+            # Obtain the player's name
             data = client_socket.recv(2048)
             player_name = data.decode()
-            # 玩家已连接
+            # Player connected
             if player_name in self.is_connect and self.is_connect[player_name]:
-                print(f"玩家 {player_name}({self.players_id[player_name]}) 已连接")
-                # 向客户端发送已连接的消息
+                print(f"player {player_name}({self.players_id[player_name]}) connected")
+                # Send connected messages to clients
                 client_socket.send("CONNECTED".encode())
                 continue
             if player_name not in self.is_connect:
                 if len(self.players) == self.max_players:
                     client_socket.send("FULL".encode())
                     continue
-                # 如果是新创建的玩家
+                # If it is a newly created player
                 player_id = len(self.players) + 1
                 player = {
                     "id": player_id,
@@ -50,12 +50,12 @@ class Server:
                 }
                 self.players_id[player_name] = player_id
                 self.players.append(player)
-                print(f"玩家 {player_name}({player_id}) 创建成功")
+                print(f"player {player_name}({player_id}) created successfully")
             else:
-                # 玩家已创建，但是断开连接后重新连接
+                # The player has created it, but reconnected after disconnecting
                 player_id = self.players_id[player_name]
                 self.set_player_socket(player_id, client_socket, client_address)
-                print(f"玩家 {player_name}({player_id}) 重新连接")
+                print(f"player {player_name}({player_id}) reconnected")
             self.is_connect[player_name] = True
             threading.Thread(target=self.handle_player, args=(player_name,)).start()
 
@@ -108,13 +108,13 @@ class Server:
                 if data:
                     message = data.decode()
                     if "Surface" in message:
-                        print("给所有user发送消息ing")
+                        print("Sending messages to all users")
                         for other_player in self.players:
                             if not self.is_connect[other_player["player_name"]]:
                                 continue
                             print(data)
                             other_player["socket"].send(data)
-                        print("发送结束 END")
+                        print("Sending END")
 
                     # 
                     print(message)
@@ -122,13 +122,13 @@ class Server:
                     print("msg[0] is " + message_parts[0])
 
                     if message_parts[0] == "Initial":
-                        print("正在给玩家初始化棋盘...." + str(player))
+                        print("Initializing chessboard for player...." + str(player))
                         self.update_and_send_player_list()
                         if len(self.surface_list) > 0:
                             for surface in self.surface_list:
                                 time.sleep(0.01)
                                 player["socket"].send(surface)
-                        print("初始化完毕....")
+                        print("Initialization completed....")
 
                     if message_parts[0] == "Confirm":
                         row, column, id = int(message_parts[1]), int(message_parts[2]), int(message_parts[3])
@@ -151,12 +151,12 @@ class Server:
                             print("len of surface is: " + str(len(self.surface_list)))
 
                 else:
-                    print(f"玩家 {player_id} 断开连接")
+                    print(f"player {player_id} Disconnect")
                     self.is_connect[player_name] = False
                     break
 
             except Exception as e:
-                print(f"与玩家 {player_id} 的连接发生错误:{str(e)}")
+                print(f"player {player_id} Connected with error:{str(e)}")
                 self.is_connect[player_name] = False
                 break
 
