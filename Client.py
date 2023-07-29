@@ -1,4 +1,5 @@
 import socket
+import sys
 import threading
 import game_grid
 import json
@@ -9,21 +10,22 @@ from game_grid import Grids
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-RED = (255,0,0)
-GREEN = (0,255,0)
-BLUE = (0,0,255)
-YELLOW = (255,204,0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 204, 0)
 
 Drawing_colors = {
-    0: WHITE, 
+    0: WHITE,
     1: BLACK,
 }
 player_colors = {
-    1:RED,
-    2:GREEN,
-    3:BLUE,
-    4:YELLOW,
+    1: RED,
+    2: GREEN,
+    3: BLUE,
+    4: YELLOW,
 }
+
 
 # 客户端类
 class Client:
@@ -36,8 +38,6 @@ class Client:
         self.waiting_for_drawing = False
         self.grid = Grids()  # Create an instance of Grids class
         self.player_list = []
-        self.game_status = True  # set game_status=True
-        self.winner = None  # set winner =NONE
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.connect((host, port))
         threading.Thread(target=self.receive_data).start()
@@ -49,6 +49,12 @@ class Client:
                 if data:
                     message = data.decode()
                     print(message)
+                    if message == "CONNECTED":
+                        print("Please do not reconnect the server")
+                        sys.exit(0)
+                    elif message == "FULL":
+                        print("Reached maximum players")
+                        sys.exit(0)
                     self.handle_message(message)
                 else:
                     print("与服务器的连接已断开")
@@ -66,7 +72,7 @@ class Client:
         image_io = io.BytesIO(image_bytes)
         surface = pygame.image.load_extended(image_io, 'PNG')
         print(f"Row: {row}, Column: {column}")
-        self.grid.set_cell_surface(row,column,surface)
+        self.grid.set_cell_surface(row, column, surface)
         return surface
 
     def handle_message(self, message):
@@ -80,30 +86,24 @@ class Client:
             self.base64_to_surface(message)
 
         elif message_type == "PLAYERLIST":
-            self.update_player_list(message) 
+            self.update_player_list(message)
 
         if message_type == "Grid_ALLOWED":
             self.allow_move = True
-            
+
         elif message_type == "Grid_NOT_ALLOWED":
             self.allow_move = False
-        elif message_type == "GAME_OVER":
-            winner_id = str(message_parts[1])
-            print(f"游戏结束，玩家 {winner_id} 获胜！")
-            #update game_staus,winner
-            self.game_status=False
-            self.winner =winner_id
 
     def update_player_list(self, message):
         player_list = message.split('|')[1:]
         self.player_list.clear()
         for infor in player_list:
             if infor:
-                player_id, player_color = infor.split('-')
+                player_id, player_name, player_color = infor.split('-')
                 player_id = int(player_id)
-                self.player_list.append((player_id,player_colors[player_id]))
+                self.player_list.append((player_id, player_name, player_colors[player_id]))
         print('更新playerlist:')
-        print('\n'.join([f'玩家ID为:{item[0]}, 颜色为:{item[1]}'for item in self.player_list]))
+        print('\n'.join([f'ID:{item[0]}, 名字:{item[1]}, 颜色:{item[2]}' for item in self.player_list]))
 
     def send_doodle(self, doodle_info):
         # Encode doodle info as a JSON string
@@ -113,10 +113,11 @@ class Client:
     def handle_player_info(self, message_parts):
         self.player_id = int(message_parts[1])
         self.player_color = player_colors[self.player_id]
-        print(f"您的玩家ID为:{self.player_id},颜色为:{self.player_color}")
+        print(f"您的玩家ID为:{self.player_id}, ,颜色为:{self.player_color}")
 
     def send_message(self, message):
         self.server_socket.send(message.encode())
+
 
 # 创建客户端实例
 def get_lan_ip():
@@ -129,12 +130,19 @@ def get_lan_ip():
     except:
         print("Unable to get Hostname and IP")
 
+
 ip = input("Please input the ip addr,(press 1 use local host)")
 if ip == "1":
     ip = get_lan_ip()
 
 client = Client(ip, 12346)
 
+# 要求用户输入名字
+player_name = input("Input your name: ")
+
+# 向服务器发送名字
+client.send_message(player_name)
+
 # 向服务器发送连接请求
-client.send_message("CONNECT")
-game_grid.run_game(client.grid,client)
+# client.send_message("CONNECT")
+game_grid.run_game(client.grid, client)
