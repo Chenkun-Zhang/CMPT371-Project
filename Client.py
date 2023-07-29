@@ -57,10 +57,10 @@ class Client:
                         sys.exit(0)
                     self.handle_message(message)
                 else:
-                    print("The connection to the server has been disconnected")
+                    print("与服务器的连接已断开")
                     break
             except Exception as e:
-                print(f"An error occurred in the connection to the server:{str(e)}")
+                print(f"与服务器的连接发生错误:{str(e)}")
                 break
 
     def base64_to_surface(self, message):
@@ -102,8 +102,8 @@ class Client:
                 player_id, player_name, player_color = infor.split('-')
                 player_id = int(player_id)
                 self.player_list.append((player_id, player_name, player_colors[player_id]))
-        print('update playerlist:')
-        print('\n'.join([f'ID:{item[0]}, name:{item[1]}, color:{item[2]}' for item in self.player_list]))
+        print('更新playerlist:')
+        print('\n'.join([f'ID:{item[0]}, 名字:{item[1]}, 颜色:{item[2]}' for item in self.player_list]))
 
     def send_doodle(self, doodle_info):
         # Encode doodle info as a JSON string
@@ -113,7 +113,7 @@ class Client:
     def handle_player_info(self, message_parts):
         self.player_id = int(message_parts[1])
         self.player_color = player_colors[self.player_id]
-        print(f"your player ID:{self.player_id}, ,your color:{self.player_color}")
+        print(f"您的玩家ID为:{self.player_id}, ,颜色为:{self.player_color}")
 
     def send_message(self, message):
         self.server_socket.send(message.encode())
@@ -137,12 +137,12 @@ if ip == "1":
 
 client = Client(ip, 12346)
 
-# input player name
+# 要求用户输入名字
 player_name = input("Input your name: ")
 
-# Send name to server
+# 向服务器发送名字
 client.send_message(player_name)
 
-# Send a connection request to the server
+# 向服务器发送连接请求
 # client.send_message("CONNECT")
 game_grid.run_game(client.grid, client)
