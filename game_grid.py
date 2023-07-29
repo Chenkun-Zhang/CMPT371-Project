@@ -3,14 +3,16 @@ import io
 import base64
 import time
 import os
+import tkinter
+from tkinter import simpledialog
 
 COLOR = {
-    (255, 255, 255): 'WHITE',
-    (0, 0, 0): 'BLACK',
-    (255, 0, 0): 'RED',
-    (0, 255, 0): 'GREEN',
-    (0, 0, 255): 'BLUE',
-    (255, 204, 0): 'YELLOW',
+    (255, 255, 255):'WHITE',
+    (0, 0, 0):'BLACK',
+    (255, 0, 0):'RED',
+    (0, 255, 0):'GREEN',
+    (0, 0, 255):'BLUE',
+    (255, 204, 0):'YELLOW',
 }
 
 # Define some colors
@@ -26,38 +28,32 @@ WINDOW_SIZE = [800, 800]
 MARGIN = 5
 curr_grid = []
 
-
 def color_distance(c1, c2):
-    return sum((x1 - x2) ** 2 for x1, x2 in zip(c1, c2))
+    return sum((x1-x2)**2 for x1, x2 in zip(c1, c2))
 
-
-def downsample_drawing(drawing, client):
+def downsample_drawing(drawing,client):
     player_color = client.player_color
     new_drawing = pygame.Surface((50, 50))
     print(player_color)
     for x in range(50):
         for y in range(50):
-            avg_color = sum(
-                color_distance(drawing.get_at((2 * x + dx, 2 * y + dy)), player_color) for dx in range(2) for dy in
-                range(2)) / 4
+            avg_color = sum(color_distance(drawing.get_at((2*x + dx, 2*y + dy)), player_color) for dx in range(2) for dy in range(2)) / 4
             new_color = avg_color <= 10  # You need to set an appropriate color_distance_threshold
             new_drawing.set_at((x, y), player_color if new_color else WHITE)
     return new_drawing
 
-
-def is_half_filled(surface, client):
+def is_half_filled(surface,client):
     total_pixels = 0
     player_color_pixels = 0
     player_color = client.player_color
     for x in range(surface.get_width()):
         for y in range(surface.get_height()):
             pixel = surface.get_at((x, y))
-            if color_distance(pixel, player_color) == 0:
+            if color_distance(pixel, player_color) == 0:  
                 player_color_pixels += 1
             total_pixels += 1
 
     return player_color_pixels / total_pixels > 0.5
-
 
 def surface_to_base64(surface):
     print(surface)
@@ -66,8 +62,7 @@ def surface_to_base64(surface):
     image_str = base64.b64encode(image_io.getvalue()).decode()
     return image_str
 
-
-class Grids:
+class Grids:    
     def __init__(self):
         self.grid = self.init_grid()
         self.draw_pos = (WINDOW_SIZE[0] // 2 - WIDTH, WINDOW_SIZE[1] - HEIGHT * 4)
@@ -95,17 +90,15 @@ class Grids:
     def draw_grid(self, screen):
         for row in range(8):
             for column in range(8):
-                pygame.draw.rect(screen, self.grid[row][column]['color'],
-                                 [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN, WIDTH, HEIGHT])
-                screen.blit(pygame.transform.scale(self.grid[row][column]["drawing"], (WIDTH, HEIGHT)),
-                            [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN])
+                pygame.draw.rect(screen, self.grid[row][column]['color'], [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN, WIDTH, HEIGHT])
+                screen.blit(pygame.transform.scale(self.grid[row][column]["drawing"], (WIDTH, HEIGHT)), [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN])
 
     # 在底部放大所选窗口，screen包含了绘图
     def draw_selected_cell(self, screen, drawing_area, selected_cell):
-
+       
         # 绘制grid的背景
         pygame.draw.rect(screen, WHITE, [self.draw_pos[0], self.draw_pos[1], WIDTH * 2, HEIGHT * 2])
-
+        
         # 绘制用户的回绘制
         screen.blit(pygame.transform.scale(drawing_area, (WIDTH * 2, HEIGHT * 2)), self.draw_pos)
 
@@ -123,12 +116,13 @@ class Player:
         self.mouse_pressed = False
         self.selected_cell = None
         self.drawing_area = pygame.Surface((WIDTH * 2, HEIGHT * 2))
+        self.player_area  = pygame.Surface((WIDTH * 4, HEIGHT//2))
         self.info_area = pygame.Surface((WIDTH * 4, HEIGHT * 4))
 
-    def send_confirm_info(self, row, column):
+    def send_confirm_info(self,row, column):
         Message = f"Confirm,{row},{column},{self.client.player_id}"
         self.client.send_message(Message)
-
+    
     def handle_mouse_down(self, pos, grids_instance):
         column = pos[0] // (WIDTH + MARGIN)
         row = pos[1] // (HEIGHT + MARGIN)
@@ -147,12 +141,9 @@ class Player:
                 self.client.waiting_for_drawing = True  # We received an ALLOW message, so we set the state to waiting
                 self.selected_cell = (row, column)
                 self.drawing_area.fill(WHITE)
-                self.drawing_area.blit(
-                    pygame.transform.scale(grids_instance.grid[row][column]["drawing"], (WIDTH * 2, HEIGHT * 2)),
-                    (0, 0))
+                self.drawing_area.blit(pygame.transform.scale(grids_instance.grid[row][column]["drawing"], (WIDTH * 2, HEIGHT * 2)), (0, 0))
 
-        elif self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (
-                WINDOW_SIZE[1] - HEIGHT * 4 <= pos[1]):
+        elif self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (WINDOW_SIZE[1] - HEIGHT * 4 <= pos[1]):
             self.mouse_pressed = True
 
     def handle_mouse_click(self, grid):
@@ -177,18 +168,19 @@ class Player:
 
     # 在底部放大方框里面作画
     def draw_on_drawing_area(self, pos):
-        if self.client.allow_move and self.mouse_pressed and self.selected_cell and (
-                WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (
-                WINDOW_SIZE[1] - HEIGHT * 4 <= pos[1]):
-            pygame.draw.circle(self.drawing_area, self.color,
-                               (pos[0] - WINDOW_SIZE[0] // 2 + WIDTH, pos[1] - WINDOW_SIZE[1] + HEIGHT * 4), 5)
+        if self.client.allow_move and self.mouse_pressed and self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (WINDOW_SIZE[1] - HEIGHT * 4 <= pos[1]):
+            pygame.draw.circle(self.drawing_area, self.color, (pos[0] - WINDOW_SIZE[0] // 2 + WIDTH, pos[1] - WINDOW_SIZE[1] + HEIGHT * 4), 5)
 
     def draw_info(self):
+         # current player
+        self.player_area.fill(WHITE)
+        font = pygame.font.Font(None, 30)
+        self.player_area.blit(font.render(f'You: {self.player_name}', True, (255,0,0)), (MARGIN,0))
         self.info_area.fill(WHITE)
         font = pygame.font.Font(None, 20)
-        for index, (id, name, color) in enumerate(self.client.player_list):
-            self.info_area.blit(font.render(f'id:{id}, name:{name}, color:{COLOR[color]}', True, color),
-                                (MARGIN, HEIGHT * index))
+        for index,(id, color, name) in enumerate(self.client.player_list):
+            #self.info_area.blit(font.render(f'player id:{id}, name:{name}, color:{COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
+            self.info_area.blit(font.render(f'player:{name}, color:{COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
 
     # 画出每一个单元格
     def draw(self, screen, grids_instance):
@@ -197,7 +189,8 @@ class Player:
         if self.selected_cell:
             grids_instance.draw_selected_cell(screen, self.drawing_area, self.selected_cell)
         self.draw_info()
-        screen.blit(self.info_area, (WINDOW_SIZE[0] - MARGIN - 6 * WIDTH, MARGIN + 2 * HEIGHT))
+        screen.blit(self.player_area, (WINDOW_SIZE[0]-MARGIN-6*WIDTH, MARGIN+HEIGHT))
+        screen.blit(self.info_area, (WINDOW_SIZE[0]-MARGIN-6*WIDTH, MARGIN+2*HEIGHT))
 
 
 class Game:
@@ -225,12 +218,31 @@ class Game:
             self.clock.tick(60)
         pygame.quit()
 
-
-def run_game(grid, client=None):
+def run_game(grid,client = None):
+     # player name
+    root = tkinter.Tk()
+    root.withdraw()
+    if False and not tkinter._default_root:
+        pass
+        #tkinter._default_root = tkinter.Tk()
+        #tkinter._default_root.destroy()
+        #tkinter._default_root.mainloop()
+    player_name = simpledialog.askstring(r'Player name', r"Please input player name:", initialvalue=r'', parent=root)
+    root.destroy()
+    root.mainloop()
+    #
+    #
     pygame.init()
     player = Player(client)
     screen = pygame.display.set_mode(WINDOW_SIZE)
     game = Game(screen, player, grid)
-    msg = f"Initial,{client.player_id}"
+ #
+    if None == player_name or 0 == len(player_name):
+        player_name = 'Player_%s'%str(client.player_id)
+    # remove - from the player name
+    player_name = player_name.replace('-', '_')
+    print('Current player name: %s'%player_name)
+    player.player_name = player_name
+    msg = f"Initial,{client.player_id},{player_name}"
     client.send_message(msg)
     game.run()
