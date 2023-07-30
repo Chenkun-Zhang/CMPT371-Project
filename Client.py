@@ -1,6 +1,7 @@
 import socket
 import sys
 import threading
+import sys
 import game_grid
 import json
 import tkinter as tk
@@ -8,6 +9,8 @@ from tkinter import simpledialog
 import base64
 import pygame
 import io
+import tkinter as tk
+from tkinter import simpledialog
 from game_grid import Grids
 
 WHITE = (255, 255, 255)
@@ -144,8 +147,6 @@ client = Client(ip, 12345)
 # # 向服务器发送名字
 # client.send_message(player_name)
 
-# 向服务器发送连接请求
-# client.send_message("CONNECT")
 
 # 创建一个隐藏的 Tkinter 窗口
 root = tk.Tk()

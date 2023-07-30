@@ -11,7 +11,7 @@ class Server:
         # 根据名字保存对应玩家的ID
         self.players_id = {}
         # 根据名字保存对应玩家是否在线
-        self.is_connect = {}        
+        self.is_connect = {}    
         self.host = host
         self.port = port
         self.max_players = max_players
@@ -120,7 +120,7 @@ class Server:
                         for other_player in self.players:
                             if not self.is_connect[other_player["player_name"]]:
                                 continue
-                            print(data)
+                            print("Fifth",data)
                             other_player["socket"].send(data)
                         print("发送结束 END")
 
@@ -175,21 +175,71 @@ class Server:
         player["socket"].send(message.encode())
 
     def remove_player(self, player_id):
-        player = self.get_player(player_id)
-        self.players.remove(player)
-        player["socket"].close()
+        with self.lock:
+            player = self.get_player(player_id)
+            if player:
+                self.players.remove(player)
+                player["socket"].close()
 
     def get_player(self, player_id):
         for player in self.players:
             if player["id"] == player_id:
                 return player
         return None
+        
     def set_player_socket(self, player_id, player_socket, player_address):
         for player in self.players:
             if player["id"] == player_id:
                 player["socket"] = player_socket
                 player["address"] = player_address
 
+    def is_game_over(self):
+        """
+
+        :return:
+        """
+
+        confirmed_grid = len(self.confirmed_grid)
+        #
+        leave_grides = 64 - confirmed_grid
+        print("leave",leave_grides)
+        my_dict = self.count_player_grids()  # get player grids
+        print("player data",my_dict)
+        sencond_value = self.get_second_largest(my_dict)
+        print("the sencond player",sencond_value)
+        if leave_grides != 0:
+
+            if sencond_value:
+                max_value = max(my_dict.values())
+                if not sencond_value + int(leave_grides) >= max_value:
+                    return True
+        else:
+            return True
+
+        # return len(self.confirmed_grid) == 5
+
+    def handle_game_over(self):
+        """
+
+        :return:
+        """
+        print("game over")
+        print("player data:",self.count_player_grids())  #
+        winner = self.getwinner()
+        print("Eighth",self.getwinner())  # get winner
+        self.send_game_over_to_clients(winner)  # send msg
+        self.close_all_connections()  # close connections
+
+    def close_all_connections(self):
+        """
+        关闭所有链接
+        :return:
+        """
+        for player in self.players:
+            player["socket"].close()
+
+        self.players = []
+        print("所有玩连接已断开")
 
 # 测试服务器
 def get_lan_ip():

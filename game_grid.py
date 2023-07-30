@@ -172,7 +172,6 @@ class Player:
             pygame.draw.circle(self.drawing_area, self.color, (pos[0] - WINDOW_SIZE[0] // 2 + WIDTH, pos[1] - WINDOW_SIZE[1] + HEIGHT * 4), 5)
 
     def draw_info(self):
-         # current player
         self.player_area.fill(WHITE)
         font = pygame.font.Font(None, 30)
         self.player_area.blit(font.render(f'You: {self.player_name}', True, (255,0,0)), (MARGIN,0))
@@ -213,6 +212,11 @@ class Game:
             pos = pygame.mouse.get_pos()
             self.player.draw_on_drawing_area(pos)
             self.player.draw(self.screen, self.grids_instance)
+            if not self.player.client.game_status:
+                self.player.draw_on_drawing_area(pos)
+                self.player.draw(self.screen, self.grids_instance)
+                self.display_game_over(self.client.winner)  #
+
             pygame.display.flip()
             self.clock.tick(60)
         pygame.quit()
