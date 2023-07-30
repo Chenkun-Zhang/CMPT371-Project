@@ -4,24 +4,28 @@ import time
 
 # Server Class
 class Server:
-    def __init__(self, host, port, max_players):
-        self.confirmed_grid = []
-        self.locked_grid = []
-        self.surface_list = []
-        # Saves the ID of the corresponding player based on the name
-        self.players_id = {}
-        # Saves whether the corresponding player is online or not according to the name
+    def __init__(self, host, port, max_players): 
+        # Initializes various server-related variables
+        self.confirmed_grid = [] # Stores confirmed grid information, where each grid is represented as a tuple (row, column, id) indicating the row, column, and player ID.
+        self.locked_grid = [] # Stores locked grid information, used for handling concurrent access.
+        self.surface_list = [] # Saves the ID of the corresponding player based on the name
+        self.players_id = {} # Saves whether the corresponding player is online or not according to the name
         self.is_connect = {}    
-        self.host = host
+        self.host = host # The address and port on which the server listens.
         self.port = port
-        self.max_players = max_players
-        self.players = []
+        self.max_players = max_players # The maximum number of players the game supports.
+        self.players = [] # The current list of connected players, where each player is represented as a dictionary containing ID, socket, address, and color information.
         self.lock = threading.Lock()
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((host, port))
-        self.server_socket.listen(max_players)
+        self.server_socket.listen(max_players) # Creates a server socket listening on the specified address and port.
 
     def start(self):
+        """
+        - Starts the server and waits for player connections.
+        - Accepts new connections as long as the number of connected players is less than the specified maximum player count.
+        - Creates new threads to handle each player's messages and requests.
+        """
         print("Server is up, waiting for players to connect...")
         while len(self.players) < self.max_players:
             client_socket, client_address = self.server_socket.accept()
@@ -65,6 +69,9 @@ class Server:
             threading.Thread(target=self.handle_player, args=(player_name,)).start()
 
     def update_and_send_player_list(self):
+        """
+        - Assembles and sends the current player list to all connected players.
+        """
         player_list_message = "PLAYERLIST,|"
         for player in self.players:
             player_list_message += f"{player['id']}-{player['color']}-{player['player_name']}|"
@@ -75,10 +82,16 @@ class Server:
             player["socket"].send(player_list_message.encode())
 
     def grid_remove(self,id):
+        """
+        - Removes locked grid information for a given player ID.
+        """
         if len(self.locked_grid) > 0 :
             self.locked_grid = [cell for cell in self.locked_grid if cell[2] != id]
 
     def grid_check(self,row,column,id):
+        """
+        - Checks if a grid can be locked to avoid multiple players accessing the same grid simultaneously.
+        """
         print(self.locked_grid)
         new_cell = (row, column, id)
         self.grid_remove(id)
@@ -102,6 +115,15 @@ class Server:
         return flag
 
     def handle_player(self, player_name):
+        """
+        - Handles messages and requests from an individual player.
+        - Continuously receives messages from the player and performs corresponding actions based on the message type, including:
+        - Sending player information back to the player.
+        - Handling initialization requests by sending the player list and map data to newly connected players.
+        - Processing grid confirmation requests and updating the `confirmed_grid` list.
+        - Processing grid lock requests by checking if the grid can be locked and sending a response message to the player.
+        - Handling game over requests, sending game over messages to all players, and executing game over cleanup.
+        """
         print("TEST1: " + str(player_name))
 
         player_id = self.players_id[player_name]
@@ -174,12 +196,18 @@ class Server:
                 break
 
     def send_player_info(self, player_id):
+        """
+        - Sends player information, including ID and color, to the player.
+        """
         player = self.get_player(player_id)
         color = player["color"]
         message = f"INFO,{player_id},{color}"
         player["socket"].send(message.encode())
 
     def remove_player(self, player_id):
+        """
+        - Removes a player with a specific ID from the server.
+        """
         with self.lock:
             player = self.get_player(player_id)
             if player:
@@ -187,12 +215,28 @@ class Server:
                 player["socket"].close()
 
     def get_player(self, player_id):
+        """
+        Retrieve player information based on the given player_id.
+        Parameters:
+            - player_id (int): The ID of the player whose information is to be retrieved.
+        Returns:
+            - dict or None: If a player with the specified player_id is found in the list of players,
+                a dictionary containing the player's information (ID, socket, address, and color) is returned.
+                If no player is found with the given player_id, the function returns None.
+        """
         for player in self.players:
             if player["id"] == player_id:
                 return player
         return None
         
     def set_player_socket(self, player_id, player_socket, player_address):
+        """
+         - Update the socket and address information of a player based on the given player_id.
+        Parameters:
+            - player_id (int): The ID of the player whose socket and address information will be updated.
+            - player_socket (socket object): The new socket object associated with the player.
+            - player_address (tuple): The new address (IP and port) associated with the player's socket.
+        """
         for player in self.players:
             if player["id"] == player_id:
                 player["socket"] = player_socket
@@ -309,18 +353,27 @@ class Server:
 # Server test
 def get_lan_ip():
     try:
+        # Get the hostname of the local machine
         host_name = socket.gethostname()
+        # Get the IP address associated with the hostname
         host_ip = socket.gethostbyname(host_name)
+        # Print the hostname and IP address for debugging purposes
         print("Hostname :  ", host_name)
         print("IP : ", host_ip)
+        # Return the obtained IP address
         return host_ip
     except:
+        # If an exception occurs during the process (e.g., unable to resolve the hostname to an IP address),
+        # print an error message indicating the failure
         print("Unable to get Hostname and IP")
 
-
+# Obtain the local IP address (IPv4) of the current machine
 lan_ip = get_lan_ip()
 print(lan_ip)
 
 # Server test
+# Create a server instance using the obtained local IP address, listening on port 12345,
+# and supporting a maximum of 3 players
 server = Server(lan_ip, 12345, 3)
+# Start the server, allowing it to accept player connections and handle gameplay
 server.start()
