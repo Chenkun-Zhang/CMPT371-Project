@@ -79,27 +79,27 @@ class Grids:
 
     def set_cell_surface(self, row, column, surface):
         print(surface)
-        print("set_cell_surface被调用")
+        print("set_cell_surface invoked.")
         if 0 <= row < 8 and 0 <= column < 8:
             drawing = pygame.transform.scale(surface, (WIDTH, HEIGHT))  # Rescale the surface to match the cell size
             self.grid[row][column]["drawing"] = drawing
         else:
             print("Invalid cell position: ({}, {})".format(row, column))
 
-    # 绘制 8*8 网格
+    # Drawing 8*8 Grids
     def draw_grid(self, screen):
         for row in range(8):
             for column in range(8):
                 pygame.draw.rect(screen, self.grid[row][column]['color'], [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN, WIDTH, HEIGHT])
                 screen.blit(pygame.transform.scale(self.grid[row][column]["drawing"], (WIDTH, HEIGHT)), [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN])
 
-    # 在底部放大所选窗口，screen包含了绘图
+    # Zoom in on the selected window at the bottom, screen contains the drawing
     def draw_selected_cell(self, screen, drawing_area, selected_cell):
        
-        # 绘制grid的背景
+        # Drawing the background of a grid
         pygame.draw.rect(screen, WHITE, [self.draw_pos[0], self.draw_pos[1], WIDTH * 2, HEIGHT * 2])
         
-        # 绘制用户的回绘制
+        # Drawing the user back to the drawing
         screen.blit(pygame.transform.scale(drawing_area, (WIDTH * 2, HEIGHT * 2)), self.draw_pos)
 
         row, column = selected_cell
@@ -166,7 +166,7 @@ class Player:
             grid.set_cell_surface(row, column, new_drawing)  # update the grid in all cases
         self.client.waiting_for_drawing = False  # We finished the drawing, so we set the state back to normal
 
-    # 在底部放大方框里面作画
+    # Draw inside the enlarged box at the bottom
     def draw_on_drawing_area(self, pos):
         if self.client.allow_move and self.mouse_pressed and self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (WINDOW_SIZE[1] - HEIGHT * 4 <= pos[1]):
             pygame.draw.circle(self.drawing_area, self.color, (pos[0] - WINDOW_SIZE[0] // 2 + WIDTH, pos[1] - WINDOW_SIZE[1] + HEIGHT * 4), 5)
@@ -180,7 +180,7 @@ class Player:
         for index,(id, color, name) in enumerate(self.client.player_list):
             self.info_area.blit(font.render(f'PlayerName: {name}, Color: {COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
 
-    # 画出每一个单元格
+    # Draw each cell
     def draw(self, screen, grids_instance):
         screen.fill(BLACK)
         grids_instance.draw_grid(screen)

@@ -2,15 +2,15 @@ import socket
 import threading
 import time
 
-# 服务器类
+# Server Class
 class Server:
     def __init__(self, host, port, max_players):
         self.confirmed_grid = []
         self.locked_grid = []
         self.surface_list = []
-        # 根据名字保存对应玩家的ID
+        # Saves the ID of the corresponding player based on the name
         self.players_id = {}
-        # 根据名字保存对应玩家是否在线
+        # Saves whether the corresponding player is online or not according to the name
         self.is_connect = {}    
         self.host = host
         self.port = port
@@ -22,19 +22,19 @@ class Server:
         self.server_socket.listen(max_players)
 
     def start(self):
-        print("服务器已启动,等待玩家连接...")
+        print("Server is up, waiting for players to connect...")
         while len(self.players) < self.max_players:
             client_socket, client_address = self.server_socket.accept()
-            # 获取玩家的名称
+            # Get the name of the player
 
             data = client_socket.recv(2048)
             player_name = data.decode()
             print("At start: The player name is: "+str(player_name))
 
-            # 玩家已连接
+            # Player Connected
             if player_name in self.is_connect and self.is_connect[player_name]:
-                print(f"玩家 {player_name}({self.players_id[player_name]}) 已连接")
-                # 向客户端发送已连接的消息
+                print(f"Player {player_name}({self.players_id[player_name]}) is connected.")
+                # Send a connected message to the client
                 client_socket.send("CONNECTED".encode())
                 continue
             if player_name not in self.is_connect:
@@ -42,7 +42,7 @@ class Server:
                     client_socket.send("FULL".encode())
                     continue
 
-                # 如果是新创建的玩家
+                # If it's a newly created player
                 player_id = len(self.players) + 1
                 player = {
                     "id": player_id,
@@ -54,14 +54,14 @@ class Server:
                 }
                 self.players_id[player_name] = player_id
                 self.players.append(player)
-                print(f"玩家 {player_name}({player_id}) 创建成功")
+                print(f"Player {player_name}({player_id}) Created Successfully.")
             else:
-                # 玩家已创建，但是断开连接后重新连接
+                # Player created but reconnected after disconnection
                 player_id = self.players_id[player_name]
                 self.set_player_socket(player_id, client_socket, client_address)
-                print(f"玩家 {player_name}({player_id}) 重新连接")
+                print(f"Player {player_name}({player_id}) reconnected.")
             self.is_connect[player_name] = True
-            print(f"玩家 {player_id} 连接成功")
+            print(f"Player {player_id} connected Successfully.")
             threading.Thread(target=self.handle_player, args=(player_name,)).start()
 
     def update_and_send_player_list(self):
@@ -116,7 +116,7 @@ class Server:
                 if data:
                     message = data.decode()
                     if("Surface" in message):
-                        print("给所有user发送消息ing")
+                        print("Sending messages to all users...")
                         for other_player in self.players:
                             if not self.is_connect[other_player["player_name"]]:
                                 continue
@@ -127,7 +127,7 @@ class Server:
                                 if other_player["id"] != player_id:
                                     other_player["socket"].send(data)
                             self.handle_game_over()
-                        print("发送结束 END")
+                        print("Sending Data END")
 
                     # 
                     print(message)
@@ -135,13 +135,13 @@ class Server:
                     print("msg[0] is "+ message_parts[0])
 
                     if message_parts[0] == "Initial":
-                        print("正在给玩家初始化棋盘...."+str(player))
+                        print("Initializing the board for the players...."+str(player))
                         self.update_and_send_player_list()
                         if len(self.surface_list)>0:
                             for surface in self.surface_list:
                                 time.sleep(0.5)
                                 player["socket"].send(surface)
-                        print("初始化完毕....")
+                        print("Initialization complete.")
 
                     if message_parts[0] == "Confirm":
                         row, column,id = int(message_parts[1]), int(message_parts[2]),int(message_parts[3])
@@ -164,12 +164,12 @@ class Server:
                             print("len of surface is: "+str(len(self.surface_list)))
                         
                 else:
-                    print(f"玩家 {player_id} 断开连接")
+                    print(f"Player {player_id} disconnected.")
                     self.is_connect[player_name] = False
                     break
 
             except Exception as e:
-                print(f"与玩家 {player_id} 的连接发生错误:{str(e)}")
+                print(f"playing with {player_id} connection error has occurred:{str(e)}")
                 self.is_connect[player_name] = False
                 break
 
@@ -237,18 +237,18 @@ class Server:
 
     def close_all_connections(self):
         """
-        关闭所有链接
+        Close all links
         :return:
         """
         for player in self.players:
             player["socket"].close()
 
         self.players = []
-        print("所有玩连接已断开")
+        print("All play connections have been disconnected.")
         7777
     def count_player_grids(self):
         """
-        统计用户的格子数
+        Counting users' grids
         :return:
         """
         player_grids = {}
@@ -306,7 +306,7 @@ class Server:
         # second_largest_keys = [key for key, value in dictionary.items() if value == second_largest_value]
         return second_largest_value
 
-# 测试服务器
+# Server test
 def get_lan_ip():
     try:
         host_name = socket.gethostname()
@@ -321,6 +321,6 @@ def get_lan_ip():
 lan_ip = get_lan_ip()
 print(lan_ip)
 
-# 测试服务器
+# Server test
 server = Server(lan_ip, 12345, 3)
 server.start()

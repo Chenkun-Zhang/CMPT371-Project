@@ -31,7 +31,7 @@ player_colors = {
     4:YELLOW,
 }
 
-# 客户端类
+# Client Class
 class Client:
     def __init__(self, host, port):
         self.host = host
@@ -64,10 +64,10 @@ class Client:
                         sys.exit(0)
                     self.handle_message(message)
                 else:
-                    print("与服务器的连接已断开")
+                    print("Connection to the server has been disconnected.")
                     break
             except Exception as e:
-                print(f"与服务器的连接发生错误:{str(e)}")
+                print(f"An error occurred connecting to the server:{str(e)}")
                 break
 
     def base64_to_surface(self, message):
@@ -102,7 +102,7 @@ class Client:
             self.allow_move = False
         elif message_type == "GAME_OVER":
             winner_id = str(message_parts[1])
-            print(f"游戏结束，玩家 {winner_id} 获胜！")
+            print(f"Game is over, Player: {winner_id} is Win!")
             #update game_staus,winner
             self.game_status=False
             self.winner =winner_id
@@ -115,8 +115,8 @@ class Client:
                 player_id, player_color, player_name = infor.split('-')
                 player_id = int(player_id)
                 self.player_list.append((player_id, player_colors[player_id], player_name))
-        print('更新playerlist:')
-        print('\n'.join([f'玩家ID为:{item[0]}, Name: {item[2]}, 颜色为:{item[1]}'for item in self.player_list]))
+        print('Updating playerlist:')
+        print('\n'.join([f'The player ID is:{item[0]}, Name: {item[2]}, Color:{item[1]}'for item in self.player_list]))
 
     def send_doodle(self, doodle_info):
         # Encode doodle info as a JSON string
@@ -126,12 +126,12 @@ class Client:
     def handle_player_info(self, message_parts):
         self.player_id = int(message_parts[1])
         self.player_color = player_colors[self.player_id]
-        print(f"您的玩家ID为:{self.player_id},颜色为:{self.player_color}")
+        print(f"Your player ID is:{self.player_id}, And color is:{self.player_color}")
 
     def send_message(self, message):
         self.server_socket.send(message.encode())
 
-# 创建客户端实例
+# Creating a Client Instance
 def get_lan_ip():
     try:
         host_name = socket.gethostname()
@@ -149,21 +149,21 @@ if ip == "1":
 
 client = Client(ip, 12345)
 
-# # 要求用户输入名字
+# # Ask the user to enter a name
 # player_name = input("Input your name: ")
 
-# # 向服务器发送名字
+# # Send name to server
 # client.send_message(player_name)
 
 
-# 创建一个隐藏的 Tkinter 窗口
+# Creating a hidden Tkinter window
 root = tk.Tk()
 root.withdraw()
 
-# 弹出一个对话框获取玩家名称
+# Pop up a dialog box to get the player name
 client.player_name = simpledialog.askstring('Player name', 'Please input player name:', initialvalue='', parent=root)
 
-# 销毁 Tkinter 窗口
+# Destroying the Tkinter window
 root.destroy()
 client.send_message(client.player_name)
 
