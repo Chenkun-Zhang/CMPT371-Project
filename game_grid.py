@@ -178,7 +178,7 @@ class Player:
         self.info_area.fill(WHITE)
         font = pygame.font.Font(None, 20)
         for index,(id, color, name) in enumerate(self.client.player_list):
-            self.info_area.blit(font.render(f'PlayerName: {self.client.player_name}, Color: {COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
+            self.info_area.blit(font.render(f'PlayerName: {name}, Color: {COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
 
     # 画出每一个单元格
     def draw(self, screen, grids_instance):
@@ -233,7 +233,7 @@ class Game:
         self.screen.blit(winner_text, winner_text_rect)
 
         pygame.display.flip()
-        
+
 def run_game(grid,client = None):
     pygame.init()
     player = Player(client)

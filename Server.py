@@ -67,7 +67,7 @@ class Server:
     def update_and_send_player_list(self):
         player_list_message = "PLAYERLIST,|"
         for player in self.players:
-            player_list_message += f"{player['id']}-{player['color']}-{player['name']}|"
+            player_list_message += f"{player['id']}-{player['color']}-{player['player_name']}|"
         player_list_message = player_list_message[:-1]  # Remove the trailing comma
         for player in self.players:
             if not self.is_connect[player["player_name"]]:
@@ -245,7 +245,7 @@ class Server:
 
         self.players = []
         print("所有玩连接已断开")
-        
+        7777
     def count_player_grids(self):
         """
         统计用户的格子数
@@ -259,9 +259,6 @@ class Server:
             else:
                 player_grids[player_id] = 1
         return player_grids
-
-
-
 
 
     def getwinner(self):
