@@ -179,8 +179,7 @@ class Player:
         self.info_area.fill(WHITE)
         font = pygame.font.Font(None, 20)
         for index,(id, color, name) in enumerate(self.client.player_list):
-            #self.info_area.blit(font.render(f'player id:{id}, name:{name}, color:{COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
-            self.info_area.blit(font.render(f'player:{name}, color:{COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
+            self.info_area.blit(font.render(f'PlayerName: {self.client.player_name}, Color: {COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
 
     # 画出每一个单元格
     def draw(self, screen, grids_instance):
@@ -219,30 +218,14 @@ class Game:
         pygame.quit()
 
 def run_game(grid,client = None):
-     # player name
-    root = tkinter.Tk()
-    root.withdraw()
-    if False and not tkinter._default_root:
-        pass
-        #tkinter._default_root = tkinter.Tk()
-        #tkinter._default_root.destroy()
-        #tkinter._default_root.mainloop()
-    player_name = simpledialog.askstring(r'Player name', r"Please input player name:", initialvalue=r'', parent=root)
-    root.destroy()
-    root.mainloop()
-    #
-    #
     pygame.init()
     player = Player(client)
     screen = pygame.display.set_mode(WINDOW_SIZE)
     game = Game(screen, player, grid)
- #
-    if None == player_name or 0 == len(player_name):
-        player_name = 'Player_%s'%str(client.player_id)
-    # remove - from the player name
-    player_name = player_name.replace('-', '_')
-    print('Current player name: %s'%player_name)
-    player.player_name = player_name
-    msg = f"Initial,{client.player_id},{player_name}"
+ 
+    player.player_name = client.player_name
+    print('Current player name: %s'%player.player_name)
+    
+    msg = f"Initial,{client.player_id},{player.player_name}"
     client.send_message(msg)
     game.run()

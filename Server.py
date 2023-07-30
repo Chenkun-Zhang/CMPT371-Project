@@ -8,6 +8,10 @@ class Server:
         self.confirmed_grid = []
         self.locked_grid = []
         self.surface_list = []
+        # 根据名字保存对应玩家的ID
+        self.players_id = {}
+        # 根据名字保存对应玩家是否在线
+        self.is_connect = {}        
         self.host = host
         self.port = port
         self.max_players = max_players
@@ -21,17 +25,44 @@ class Server:
         print("服务器已启动,等待玩家连接...")
         while len(self.players) < self.max_players:
             client_socket, client_address = self.server_socket.accept()
-            player_id = len(self.players) + 1
-            player = {
-                "id": player_id,
-                "name": 'Player_%d'%player_id,
-                "socket": client_socket,
-                "address": client_address,
-                "color": player_id
-            }
-            self.players.append(player)
+            # 获取玩家的名称
+
+            data = client_socket.recv(2048)
+            player_name = data.decode()
+            print("At start: The player name is: "+str(player_name))
+
+            # 玩家已连接
+            if player_name in self.is_connect and self.is_connect[player_name]:
+                print(f"玩家 {player_name}({self.players_id[player_name]}) 已连接")
+                # 向客户端发送已连接的消息
+                client_socket.send("CONNECTED".encode())
+                continue
+            if player_name not in self.is_connect:
+                if len(self.players) == self.max_players:
+                    client_socket.send("FULL".encode())
+                    continue
+
+                # 如果是新创建的玩家
+                player_id = len(self.players) + 1
+                player = {
+                    "id": player_id,
+                    "player_name": player_name,
+                    "name": 'Player_%d'%player_id,
+                    "socket": client_socket,
+                    "address": client_address,
+                    "color": player_id
+                }
+                self.players_id[player_name] = player_id
+                self.players.append(player)
+                print(f"玩家 {player_name}({player_id}) 创建成功")
+            else:
+                # 玩家已创建，但是断开连接后重新连接
+                player_id = self.players_id[player_name]
+                self.set_player_socket(player_id, client_socket, client_address)
+                print(f"玩家 {player_name}({player_id}) 重新连接")
+            self.is_connect[player_name] = True
             print(f"玩家 {player_id} 连接成功")
-            threading.Thread(target=self.handle_player, args=(player_id,)).start()
+            threading.Thread(target=self.handle_player, args=(player_name,)).start()
 
     def update_and_send_player_list(self):
         player_list_message = "PLAYERLIST,|"
@@ -39,6 +70,8 @@ class Server:
             player_list_message += f"{player['id']}-{player['color']}-{player['name']}|"
         player_list_message = player_list_message[:-1]  # Remove the trailing comma
         for player in self.players:
+            if not self.is_connect[player["player_name"]]:
+                continue
             player["socket"].send(player_list_message.encode())
 
     def grid_remove(self,id):
@@ -68,7 +101,12 @@ class Server:
         print("The flag is: "+ str(flag))
         return flag
 
-    def handle_player(self, player_id):
+    def handle_player(self, player_name):
+        print("TEST1: " + str(player_name))
+
+        player_id = self.players_id[player_name]
+
+        print("Player id: ", player_id)
         player = self.get_player(player_id)
         socket = player["socket"]
         self.send_player_info(player_id)
@@ -80,6 +118,8 @@ class Server:
                     if("Surface" in message):
                         print("给所有user发送消息ing")
                         for other_player in self.players:
+                            if not self.is_connect[other_player["player_name"]]:
+                                continue
                             print(data)
                             other_player["socket"].send(data)
                         print("发送结束 END")
@@ -94,7 +134,7 @@ class Server:
                         self.update_and_send_player_list()
                         if len(self.surface_list)>0:
                             for surface in self.surface_list:
-                                time.sleep(0.01)
+                                time.sleep(0.5)
                                 player["socket"].send(surface)
                         print("初始化完毕....")
 
@@ -119,14 +159,13 @@ class Server:
                             print("len of surface is: "+str(len(self.surface_list)))
                         
                 else:
-                    self.remove_player(player_id)
-                    self.grid_remove(player_id)
                     print(f"玩家 {player_id} 断开连接")
+                    self.is_connect[player_name] = False
                     break
 
             except Exception as e:
                 print(f"与玩家 {player_id} 的连接发生错误:{str(e)}")
-                self.remove_player(player_id)
+                self.is_connect[player_name] = False
                 break
 
     def send_player_info(self, player_id):
@@ -145,7 +184,28 @@ class Server:
             if player["id"] == player_id:
                 return player
         return None
+    def set_player_socket(self, player_id, player_socket, player_address):
+        for player in self.players:
+            if player["id"] == player_id:
+                player["socket"] = player_socket
+                player["address"] = player_address
+
 
 # 测试服务器
-server = Server("localhost", 12346, 3)
+def get_lan_ip():
+    try:
+        host_name = socket.gethostname()
+        host_ip = socket.gethostbyname(host_name)
+        print("Hostname :  ", host_name)
+        print("IP : ", host_ip)
+        return host_ip
+    except:
+        print("Unable to get Hostname and IP")
+
+
+lan_ip = get_lan_ip()
+print(lan_ip)
+
+# 测试服务器
+server = Server(lan_ip, 12345, 3)
 server.start()
