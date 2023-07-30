@@ -122,6 +122,11 @@ class Server:
                                 continue
                             print("Fifth",data)
                             other_player["socket"].send(data)
+                        if self.is_game_over():
+                            for other_player in self.players:
+                                if other_player["id"] != player_id:
+                                    other_player["socket"].send(data)
+                            self.handle_game_over()
                         print("发送结束 END")
 
                     # 
@@ -240,6 +245,69 @@ class Server:
 
         self.players = []
         print("所有玩连接已断开")
+        
+    def count_player_grids(self):
+        """
+        统计用户的格子数
+        :return:
+        """
+        player_grids = {}
+        for cell in self.confirmed_grid:
+            player_id = cell[2]
+            if player_id in player_grids:
+                player_grids[player_id] += 1
+            else:
+                player_grids[player_id] = 1
+        return player_grids
+
+
+
+
+
+    def getwinner(self):
+        """
+
+        :return:winner
+        """
+        playerdata = self.count_player_grids()
+        # max_item = max(playerdata.items(), key=lambda x: x[1])
+        max_list = []
+        max_value = max(playerdata.values())
+        for m, n in playerdata.items():
+            if n == max_value:
+                max_list.append(m)
+        winner = ''
+        for i in max_list:
+            winner = winner + " " + str(i) + " "
+
+        return winner
+    def send_game_over_to_clients(self, winner):
+        """
+        send game over to clinets
+        :param winner: the winner text
+        """
+
+        message = f"GAME_OVER,{winner}"
+        print("ninth",message[1])
+        for player in self.players:
+            player["socket"].send(message.encode())
+    def get_second_largest(self,dictionary):
+        if len(dictionary) < 2:
+            return None
+
+        sorted_values = sorted(dictionary.values(), reverse=True)
+        second_largest_value = None
+
+        for value in sorted_values:
+            if value < max(sorted_values):
+                second_largest_value = value
+                break
+
+        if second_largest_value is None:
+            return None
+
+        # second_largest_keys = [key for key, value in dictionary.items() if value == second_largest_value]
+        return second_largest_value
 
 # 测试服务器
 def get_lan_ip():

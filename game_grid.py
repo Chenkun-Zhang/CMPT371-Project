@@ -18,7 +18,7 @@ COLOR = {
 # Define some colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-
+BLUE = (0,0,255)
 # This sets the WIDTH and HEIGHT of each grid location & window size
 WIDTH = 50
 HEIGHT = 50
@@ -220,7 +220,20 @@ class Game:
             pygame.display.flip()
             self.clock.tick(60)
         pygame.quit()
+#game over show
+    def display_game_over(self,winner):
+        font = pygame.font.Font(None, 100)
+        text = font.render("GAME_OVER", True, BLUE)
+        text_rect = text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2))
+        self.screen.blit(text, text_rect)
+        #show winner
+        winner_font = pygame.font.Font(None, 50)
+        winner_text = winner_font.render(f"winner is : {winner}", True, BLUE)
+        winner_text_rect = winner_text.get_rect(center=(WINDOW_SIZE[0] // 2, WINDOW_SIZE[1] // 2 + 50))
+        self.screen.blit(winner_text, winner_text_rect)
 
+        pygame.display.flip()
+        
 def run_game(grid,client = None):
     pygame.init()
     player = Player(client)
