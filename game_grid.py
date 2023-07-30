@@ -3,6 +3,8 @@ import io
 import base64
 import time
 import os
+import tkinter
+from tkinter import simpledialog
 
 COLOR = {
     (255, 255, 255):'WHITE',
@@ -114,6 +116,7 @@ class Player:
         self.mouse_pressed = False
         self.selected_cell = None
         self.drawing_area = pygame.Surface((WIDTH * 2, HEIGHT * 2))
+        self.player_area  = pygame.Surface((WIDTH * 4, HEIGHT//2))
         self.info_area = pygame.Surface((WIDTH * 4, HEIGHT * 4))
 
     def send_confirm_info(self,row, column):
@@ -169,10 +172,13 @@ class Player:
             pygame.draw.circle(self.drawing_area, self.color, (pos[0] - WINDOW_SIZE[0] // 2 + WIDTH, pos[1] - WINDOW_SIZE[1] + HEIGHT * 4), 5)
 
     def draw_info(self):
+        self.player_area.fill(WHITE)
+        font = pygame.font.Font(None, 30)
+        self.player_area.blit(font.render(f'You: {self.player_name}', True, (255,0,0)), (MARGIN,0))
         self.info_area.fill(WHITE)
         font = pygame.font.Font(None, 20)
-        for index,(id, color) in enumerate(self.client.player_list):
-            self.info_area.blit(font.render(f'player id:{id}, color : {COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
+        for index,(id, color, name) in enumerate(self.client.player_list):
+            self.info_area.blit(font.render(f'PlayerName: {self.client.player_name}, Color: {COLOR[color]}', True, color), (MARGIN,HEIGHT*index))
 
     # 画出每一个单元格
     def draw(self, screen, grids_instance):
@@ -185,13 +191,11 @@ class Player:
 
 
 class Game:
-    def __init__(self, screen, player, grids_instance,client):
+    def __init__(self, screen, player, grids_instance):
         self.screen = screen
         self.player = player
         self.grids_instance = grids_instance
         self.clock = pygame.time.Clock()
-        self.client = client
-
 
     def run(self):
         done = False
@@ -207,7 +211,7 @@ class Game:
             pos = pygame.mouse.get_pos()
             self.player.draw_on_drawing_area(pos)
             self.player.draw(self.screen, self.grids_instance)
-            if not self.client.game_status:
+            if not self.player.client.game_status:
                 self.player.draw_on_drawing_area(pos)
                 self.player.draw(self.screen, self.grids_instance)
                 self.display_game_over(self.client.winner)  #
@@ -232,7 +236,12 @@ def run_game(grid,client = None):
     pygame.init()
     player = Player(client)
     screen = pygame.display.set_mode(WINDOW_SIZE)
-    game = Game(screen, player, grid,client)
-    msg = f"Initial,{client.player_id}"
+    game = Game(screen, player, grid)
+ 
+    player.player_name = client.player_name
+    print('Current player name: %s'%player.player_name)
+    
+    msg = f"Initial,{client.player_id},{player.player_name}"
+
     client.send_message(msg)
     game.run()

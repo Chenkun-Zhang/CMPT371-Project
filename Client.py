@@ -1,10 +1,13 @@
 import socket
 import threading
+import sys
 import game_grid
 import json
 import base64
 import pygame
 import io
+import tkinter as tk
+from tkinter import simpledialog
 from game_grid import Grids
 
 WHITE = (255, 255, 255)
@@ -30,6 +33,7 @@ class Client:
     def __init__(self, host, port):
         self.host = host
         self.port = port
+        self.player_name = None
         self.player_id = None
         self.player_color = None
         self.allow_move = False
@@ -49,6 +53,12 @@ class Client:
                 if data:
                     message = data.decode()
                     print(message)
+                    if message == "CONNECTED":
+                        print("Please do not reconnect the server")
+                        sys.exit(0)
+                    elif message == "FULL":
+                        print("Reached maximum players")
+                        sys.exit(0)
                     self.handle_message(message)
                 else:
                     print("与服务器的连接已断开")
@@ -99,11 +109,11 @@ class Client:
         self.player_list.clear()
         for infor in player_list:
             if infor:
-                player_id, player_color = infor.split('-')
+                player_id, player_color, player_name = infor.split('-')
                 player_id = int(player_id)
-                self.player_list.append((player_id,player_colors[player_id]))
+                self.player_list.append((player_id, player_colors[player_id], player_name))
         print('更新playerlist:')
-        print('\n'.join([f'玩家ID为:{item[0]}, 颜色为:{item[1]}'for item in self.player_list]))
+        print('\n'.join([f'玩家ID为:{item[0]}, Name: {item[2]}, 颜色为:{item[1]}'for item in self.player_list]))
 
     def send_doodle(self, doodle_info):
         # Encode doodle info as a JSON string
@@ -129,12 +139,23 @@ def get_lan_ip():
     except:
         print("Unable to get Hostname and IP")
 
+
 ip = input("Please input the ip addr,(press 1 use local host)")
 if ip == "1":
     ip = get_lan_ip()
 
 client = Client(ip, 12346)
 
-# 向服务器发送连接请求
-client.send_message("CONNECT")
-game_grid.run_game(client.grid,client)
+
+# 创建一个隐藏的 Tkinter 窗口
+root = tk.Tk()
+root.withdraw()
+
+# 弹出一个对话框获取玩家名称
+client.player_name = simpledialog.askstring('Player name', 'Please input player name:', initialvalue='', parent=root)
+
+# 销毁 Tkinter 窗口
+root.destroy()
+client.send_message(client.player_name)
+
+game_grid.run_game(client.grid, client)
