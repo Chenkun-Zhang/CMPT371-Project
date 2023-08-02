@@ -6,6 +6,7 @@ import os
 import tkinter
 from tkinter import simpledialog
 
+# A dictionary mapping RGB color tuples to color names.
 COLOR = {
     (255, 255, 255):'WHITE',
     (0, 0, 0):'BLACK',
@@ -28,9 +29,11 @@ WINDOW_SIZE = [800, 800]
 MARGIN = 5
 curr_grid = []
 
+# Computes the squared Euclidean distance between two RGB color tuples.
 def color_distance(c1, c2):
     return sum((x1-x2)**2 for x1, x2 in zip(c1, c2))
 
+# Downscales a drawing to a 50x50 grid by averaging colors from a 2x2 grid.
 def downsample_drawing(drawing,client):
     player_color = client.player_color
     new_drawing = pygame.Surface((50, 50))
@@ -42,6 +45,7 @@ def downsample_drawing(drawing,client):
             new_drawing.set_at((x, y), player_color if new_color else WHITE)
     return new_drawing
 
+# Checks if more than 50% of a cell is filled with the player's color.
 def is_half_filled(surface,client):
     total_pixels = 0
     player_color_pixels = 0
@@ -55,6 +59,7 @@ def is_half_filled(surface,client):
 
     return player_color_pixels / total_pixels > 0.5
 
+# Converts a Pygame surface to a base64-encoded PNG image.
 def surface_to_base64(surface):
     print(surface)
     image_io = io.BytesIO()
@@ -62,6 +67,7 @@ def surface_to_base64(surface):
     image_str = base64.b64encode(image_io.getvalue()).decode()
     return image_str
 
+# Manages the 8x8 grid, initializing cells and handling drawing operations.
 class Grids:    
     def __init__(self):
         self.grid = self.init_grid()
@@ -107,7 +113,7 @@ class Grids:
         screen.blit(pygame.transform.scale(drawing_area, (WIDTH, HEIGHT)),
                     [(MARGIN + WIDTH) * column + MARGIN, (MARGIN + HEIGHT) * row + MARGIN])
 
-
+# Represents a player's interaction with the game. Handles mouse events, drawing, and sending messages.
 class Player:
     def __init__(self, client):
         self.id = client.player_id
@@ -190,7 +196,7 @@ class Player:
         screen.blit(self.player_area, (WINDOW_SIZE[0]-MARGIN-6*WIDTH, MARGIN+HEIGHT))
         screen.blit(self.info_area, (WINDOW_SIZE[0]-MARGIN-6*WIDTH, MARGIN+2*HEIGHT))
 
-
+#  Orchestrates the game loop, updating the screen and handling user input.
 class Game:
     def __init__(self, screen, player, grids_instance,client):
         self.screen = screen
@@ -235,6 +241,7 @@ class Game:
 
         pygame.display.flip()
 
+# Initializes the Pygame environment, sets up the player, and runs the game loop.
 def run_game(grid,client = None):
     pygame.init()
     player = Player(client)
