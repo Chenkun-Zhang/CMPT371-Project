@@ -130,6 +130,8 @@ class Server:
 
         print("Player id: ", player_id)
         player = self.get_player(player_id)
+        print("player type",type(player))
+        print("plaer name",player['player_name'])
         socket = player["socket"]
         self.send_player_info(player_id)
         while True:
@@ -145,9 +147,6 @@ class Server:
                             print("Fifth",data)
                             other_player["socket"].send(data)
                         if self.is_game_over():
-                            for other_player in self.players:
-                                if other_player["id"] != player_id:
-                                    other_player["socket"].send(data)
                             self.handle_game_over()
                         print("Sending Data END")
 
@@ -258,10 +257,9 @@ class Server:
         print("the sencond player",sencond_value)
         if leave_grides != 0:
 
-            if sencond_value:
-                max_value = max(my_dict.values())
-                if not sencond_value + int(leave_grides) >= max_value:
-                    return True
+            max_value = max(my_dict.values())
+            if not sencond_value + int(leave_grides) >= max_value:
+                return True
         else:
             return True
 
@@ -276,8 +274,9 @@ class Server:
         print("player data:",self.count_player_grids())  #
         winner = self.getwinner()
         print("Eighth",self.getwinner())  # get winner
-        self.send_game_over_to_clients(winner)  # send msg
-        self.close_all_connections()  # close connections
+        self.send_game_over_to_clients(winner)
+        for player in self.players:
+            player["socket"].close()
 
     def close_all_connections(self):
         """
@@ -289,7 +288,7 @@ class Server:
 
         self.players = []
         print("All play connections have been disconnected.")
-        7777
+        
     def count_player_grids(self):
         """
         Counting users' grids
@@ -298,12 +297,18 @@ class Server:
         player_grids = {}
         for cell in self.confirmed_grid:
             player_id = cell[2]
+            print("player_id",player_id)
             if player_id in player_grids:
                 player_grids[player_id] += 1
             else:
                 player_grids[player_id] = 1
+        print("player grids is:",player_grids)
         return player_grids
 
+    def get_player_name_by_id(self,players, id):
+        for player in players:
+            if player['id'] == id:
+                return player['player_name']
 
     def getwinner(self):
         """
@@ -317,9 +322,16 @@ class Server:
         for m, n in playerdata.items():
             if n == max_value:
                 max_list.append(m)
-        winner = ''
+        
+        print("max list:",max_list)
+        # max_list = [2, 1]
+        playernamelist = []
         for i in max_list:
-            winner = winner + " " + str(i) + " "
+            playername = self.get_player_name_by_id(self.players,i)
+            playernamelist.append(playername)
+        print("winnerlist is ",playernamelist)
+        winner = ' '.join(str(i) for i in playernamelist) + ","
+        print("winner is:", winner)
 
         return winner
     def send_game_over_to_clients(self, winner):
@@ -334,10 +346,10 @@ class Server:
             player["socket"].send(message.encode())
     def get_second_largest(self,dictionary):
         if len(dictionary) < 2:
-            return None
+            return 0
 
         sorted_values = sorted(dictionary.values(), reverse=True)
-        second_largest_value = None
+        second_largest_value = 0
 
         for value in sorted_values:
             if value < max(sorted_values):
@@ -345,7 +357,7 @@ class Server:
                 break
 
         if second_largest_value is None:
-            return None
+            return 0
 
         # second_largest_keys = [key for key, value in dictionary.items() if value == second_largest_value]
         return second_largest_value

@@ -192,9 +192,10 @@ class Player:
 
 
 class Game:
-    def __init__(self, screen, player, grids_instance):
+    def __init__(self, screen, player, grids_instance,client):
         self.screen = screen
         self.player = player
+        self.client = client
         self.grids_instance = grids_instance
         self.clock = pygame.time.Clock()
 
@@ -238,7 +239,7 @@ def run_game(grid,client = None):
     pygame.init()
     player = Player(client)
     screen = pygame.display.set_mode(WINDOW_SIZE)
-    game = Game(screen, player, grid)
+    game = Game(screen, player, grid,client)
  
     player.player_name = client.player_name
     print('Current player name: %s'%player.player_name)
