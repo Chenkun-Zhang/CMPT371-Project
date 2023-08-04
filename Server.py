@@ -92,7 +92,8 @@ class Server:
         """
         - Checks if a grid can be locked to avoid multiple players accessing the same grid simultaneously.
         """
-        print(self.locked_grid)
+        print("the start confirmed_list" + str(self.confirmed_grid))
+        print("the start locked_list:" + str(self.locked_grid))
         new_cell = (row, column, id)
         self.grid_remove(id)
 
@@ -107,83 +108,34 @@ class Server:
 
         self.locked_grid.append(new_cell)
 
-        print(self.locked_grid)
-        print(new_cell)
-        print(self.confirmed_grid)
+        print("the new cells"+str(new_cell))
+        print("the list after update:" + str(self.locked_grid))
+        
+        
 
         print("The flag is: "+ str(flag))
         return flag
 
     def handle_player(self, player_name):
-        """
-        - Handles messages and requests from an individual player.
-        - Continuously receives messages from the player and performs corresponding actions based on the message type, including:
-        - Sending player information back to the player.
-        - Handling initialization requests by sending the player list and map data to newly connected players.
-        - Processing grid confirmation requests and updating the `confirmed_grid` list.
-        - Processing grid lock requests by checking if the grid can be locked and sending a response message to the player.
-        - Handling game over requests, sending game over messages to all players, and executing game over cleanup.
-        """
-        print("TEST1: " + str(player_name))
-
+        
         player_id = self.players_id[player_name]
-
-        print("Player id: ", player_id)
         player = self.get_player(player_id)
-        print("player type",type(player))
-        print("plaer name",player['player_name'])
         socket = player["socket"]
         self.send_player_info(player_id)
+        
         while True:
             try:
-                data = socket.recv(2048)
+                data = socket.recv(1024)
                 if data:
-                    message = data.decode()
-                    if("Surface" in message):
-                        print("Sending messages to all users...")
-                        for other_player in self.players:
-                            if not self.is_connect[other_player["player_name"]]:
-                                continue
-                            print("Fifth",data)
-                            other_player["socket"].send(data)
-                        if self.is_game_over():
-                            self.handle_game_over()
-                        print("Sending Data END")
-
-                    # 
-                    print(message)
-                    message_parts = message.split(",")
-                    print("msg[0] is "+ message_parts[0])
-
-                    if message_parts[0] == "Initial":
-                        print("Initializing the board for the players...."+str(player))
-                        self.update_and_send_player_list()
-                        if len(self.surface_list)>0:
-                            for surface in self.surface_list:
-                                time.sleep(0.5)
-                                player["socket"].send(surface)
-                        print("Initialization complete.")
-
-                    if message_parts[0] == "Confirm":
-                        row, column,id = int(message_parts[1]), int(message_parts[2]),int(message_parts[3])
-                        cell = (row, column,id)
-                        if cell not in self.confirmed_grid:
-                            self.confirmed_grid.append(cell)
-                        print(len(self.confirmed_grid))
-
-                    elif message_parts[0] == "gridRequest":
-                        row, column, player_id= int(message_parts[1]), int(message_parts[2]), int(message_parts[3])
-                        if self.grid_check(row,column,player_id):
-                            time.sleep(0.1)
-                            socket.send("Grid_ALLOWED".encode())
-                        else:
-                            socket.send("Grid_NOT_ALLOWED".encode())
-
-                    elif "Surface" in message_parts[0]:
-                        if data not in self.surface_list:
-                            self.surface_list.append(data)
-                            print("len of surface is: "+str(len(self.surface_list)))
-                        
+                    decoded_data = data.decode()
+                    if "messageEND" in decoded_data:
+                        print("execute messageEND")
+                        messages = decoded_data.split("messageEND")
+                        for message in messages[:-1]:
+                            self.handle_single_message(message, player, socket, player_id)
+                    else:
+                        print("execute non-messageEND")
+                        self.handle_single_message(decoded_data, player, socket, player_id)
                 else:
                     print(f"Player {player_id} disconnected.")
                     self.is_connect[player_name] = False
@@ -193,6 +145,50 @@ class Server:
                 print(f"playing with {player_id} connection error has occurred:{str(e)}")
                 self.is_connect[player_name] = False
                 break
+
+    def handle_single_message(self, message, player, socket, player_id):
+        if "Surface" in message:
+            print("Sending messages to all users...")
+            for other_player in self.players:
+                if not self.is_connect[other_player["player_name"]]:
+                    continue
+                other_player["socket"].send(message.encode())
+            if self.is_game_over():
+                self.handle_game_over()
+            print("Sending Data END")
+
+        message_parts = message.split(",")
+
+        if message_parts[0] == "Initial":
+            print("Initializing the board for the players...."+str(player))
+            self.update_and_send_player_list()
+            if len(self.surface_list) > 0:
+                for surface in self.surface_list:
+                    time.sleep(0.5)
+                    player["socket"].send(surface)
+            print("Initialization complete.")
+
+        if message_parts[0] == "Confirm":
+            print("in Confirm, -- msg1 is: " + str(message_parts))
+            row, column, id = int(message_parts[1]), int(message_parts[2]), int(message_parts[3])
+            cell = (row, column, id)
+            if cell not in self.confirmed_grid:
+                self.confirmed_grid.append(cell)
+            print(len(self.confirmed_grid))
+
+        elif message_parts[0] == "gridRequest":
+            print("in gridRequest -- msg1 is: " + str(message_parts))
+            row, column, player_id = int(message_parts[1]), int(message_parts[2]), int(message_parts[3])
+            if self.grid_check(row, column, player_id):
+                time.sleep(0.1)
+                socket.send("Grid_ALLOWED".encode())
+            else:
+                socket.send("Grid_NOT_ALLOWED".encode())
+
+        elif "Surface" in message_parts[0]:
+            if message.encode() not in self.surface_list:
+                self.surface_list.append(message.encode())
+                print("len of surface is: "+str(len(self.surface_list)))
 
     def send_player_info(self, player_id):
         """
