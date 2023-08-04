@@ -126,22 +126,25 @@ class Player:
         self.info_area = pygame.Surface((WIDTH * 4, HEIGHT * 4))
 
     def send_confirm_info(self,row, column):
-        Message = f"Confirm,{row},{column},{self.client.player_id}"
+        Message = f"Confirm,{row},{column},{self.client.player_id},messageEND"
         self.client.send_message(Message)
     
     def handle_mouse_down(self, pos, grids_instance):
+        not_allowed = False
         column = pos[0] // (WIDTH + MARGIN)
         row = pos[1] // (HEIGHT + MARGIN)
         if 0 <= row < 8 and 0 <= column < 8:
             if self.client.waiting_for_drawing:  # If we are waiting for the drawing to complete
                 print("Still processing previous ALLOW message")
+                not_allowed = True
                 return  # Return without sending a new gridRequest message
-            gridMessage = f"gridRequest,{row},{column},{self.id}"
+            gridMessage = f"gridRequest,{row},{column},{self.id},messageEND"
             print(gridMessage)
             self.client.server_socket.send(gridMessage.encode())
             time.sleep(0.1)
             if not self.client.allow_move:
                 print("THIS IS NOT ALLOWED")
+                not_allowed = True
                 return
             else:
                 self.client.waiting_for_drawing = True  # We received an ALLOW message, so we set the state to waiting
@@ -149,7 +152,7 @@ class Player:
                 self.drawing_area.fill(WHITE)
                 self.drawing_area.blit(pygame.transform.scale(grids_instance.grid[row][column]["drawing"], (WIDTH * 2, HEIGHT * 2)), (0, 0))
 
-        elif self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (WINDOW_SIZE[1] - HEIGHT * 4 <= pos[1]):
+        elif self.selected_cell and (WINDOW_SIZE[0] // 2 - WIDTH <= pos[0] <= WINDOW_SIZE[0] // 2 + WIDTH) and (WINDOW_SIZE[1] - HEIGHT * 4 <= pos[1]) and not not_allowed:
             self.mouse_pressed = True
 
     def handle_mouse_click(self, grid):
@@ -160,6 +163,7 @@ class Player:
             if is_half_filled(self.drawing_area, self.client):
                 self.send_confirm_info(row, column)
                 drawing_str = surface_to_base64(new_drawing)
+                time.sleep(0.1)
                 doodle_info = {
                     "Surface": 1,
                     "row": row,
