@@ -31,7 +31,7 @@ class Server:
             client_socket, client_address = self.server_socket.accept()
             # Get the name of the player
 
-            data = client_socket.recv(2048)
+            data = client_socket.recv(1024)
             player_name = data.decode()
             print("At start: The player name is: "+str(player_name))
 
@@ -101,18 +101,19 @@ class Server:
 
         for cell in self.locked_grid:
             if cell[0] == row and cell[1] == column:
+                
                 flag = False
         for cell in self.confirmed_grid:
             if cell[0] == row and cell[1] == column:
                 flag = False
-
-        self.locked_grid.append(new_cell)
+        
+        if flag:
+            self.locked_grid.append(new_cell)
+        
 
         print("the new cells"+str(new_cell))
         print("the list after update:" + str(self.locked_grid))
         
-        
-
         print("The flag is: "+ str(flag))
         return flag
 
@@ -176,7 +177,7 @@ class Server:
                 self.confirmed_grid.append(cell)
             print(len(self.confirmed_grid))
 
-        elif message_parts[0] == "gridRequest":
+        if message_parts[0] == "gridRequest":
             print("in gridRequest -- msg1 is: " + str(message_parts))
             row, column, player_id = int(message_parts[1]), int(message_parts[2]), int(message_parts[3])
             if self.grid_check(row, column, player_id):
@@ -185,7 +186,7 @@ class Server:
             else:
                 socket.send("Grid_NOT_ALLOWED".encode())
 
-        elif "Surface" in message_parts[0]:
+        if "Surface" in message_parts[0]:
             if message.encode() not in self.surface_list:
                 self.surface_list.append(message.encode())
                 print("len of surface is: "+str(len(self.surface_list)))
@@ -293,7 +294,7 @@ class Server:
         player_grids = {}
         for cell in self.confirmed_grid:
             player_id = cell[2]
-            print("player_id",player_id)
+            # print("player_id",player_id)
             if player_id in player_grids:
                 player_grids[player_id] += 1
             else:
