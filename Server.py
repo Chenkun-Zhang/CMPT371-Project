@@ -31,7 +31,7 @@ class Server:
             client_socket, client_address = self.server_socket.accept()
             # Get the name of the player
 
-            data = client_socket.recv(1024)
+            data = client_socket.recv(2048)
             player_name = data.decode()
             print("At start: The player name is: "+str(player_name))
 
@@ -92,8 +92,8 @@ class Server:
         """
         - Checks if a grid can be locked to avoid multiple players accessing the same grid simultaneously.
         """
-        print("the start confirmed_list" + str(self.confirmed_grid))
-        print("the start locked_list:" + str(self.locked_grid))
+        # print("the start confirmed_list" + str(self.confirmed_grid))
+        # print("the start locked_list:" + str(self.locked_grid))
         new_cell = (row, column, id)
         self.grid_remove(id)
 
@@ -111,8 +111,8 @@ class Server:
             self.locked_grid.append(new_cell)
         
 
-        print("the new cells"+str(new_cell))
-        print("the list after update:" + str(self.locked_grid))
+        # print("the new cells"+str(new_cell))
+        # print("the list after update:" + str(self.locked_grid))
         
         print("The flag is: "+ str(flag))
         return flag
@@ -126,7 +126,7 @@ class Server:
         
         while True:
             try:
-                data = socket.recv(1024)
+                data = socket.recv(2048)
                 if data:
                     decoded_data = data.decode()
                     if "messageEND" in decoded_data:

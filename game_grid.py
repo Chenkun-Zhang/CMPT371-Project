@@ -61,7 +61,7 @@ def is_half_filled(surface,client):
 
 # Converts a Pygame surface to a base64-encoded PNG image.
 def surface_to_base64(surface):
-    print(surface)
+    # print(surface)
     image_io = io.BytesIO()
     pygame.image.save_extended(surface, image_io, 'PNG')
     image_str = base64.b64encode(image_io.getvalue()).decode()
@@ -84,8 +84,8 @@ class Grids:
         return grid
 
     def set_cell_surface(self, row, column, surface):
-        print(surface)
-        print("set_cell_surface invoked.")
+        # print(surface)
+        # print("set_cell_surface invoked.")
         if 0 <= row < 8 and 0 <= column < 8:
             drawing = pygame.transform.scale(surface, (WIDTH, HEIGHT))  # Rescale the surface to match the cell size
             self.grid[row][column]["drawing"] = drawing
@@ -163,7 +163,7 @@ class Player:
             if is_half_filled(self.drawing_area, self.client):
                 self.send_confirm_info(row, column)
                 drawing_str = surface_to_base64(new_drawing)
-                time.sleep(0.1)
+                # time.sleep(0.1)
                 doodle_info = {
                     "Surface": 1,
                     "row": row,

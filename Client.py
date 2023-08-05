@@ -56,7 +56,7 @@ class Client:
                 data = self.server_socket.recv(2048) # Receive data from the server (up to 2048 bytes)
                 if data: # Check if data has been received
                     message = data.decode()
-                    print(message)
+                    # print(message)
                     if message == "CONNECTED": # Check the message content and take appropriate actions
                         print("Please do not reconnect the server")
                         sys.exit(0)
