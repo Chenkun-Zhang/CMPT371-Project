@@ -60,7 +60,7 @@ class Client:
                     if message == "CONNECTED": # Check the message content and take appropriate actions
                         print("Please do not reconnect the server")
                         sys.exit(0)
-                    elif message == "FULL":
+                    if message == "FULL":
                         print("Reached maximum players")
                         sys.exit(0)
                     self.handle_message(message) # Call a method to handle the received message
@@ -90,10 +90,10 @@ class Client:
         if message_type == "INFO":
             self.handle_player_info(message_parts)
 
-        elif "Surface" in message_type:
+        if "Surface" in message_type:
             self.base64_to_surface(message)
 
-        elif message_type == "PLAYERLIST":
+        if message_type == "PLAYERLIST":
             self.update_player_list(message) 
 
         if message_type == "Grid_ALLOWED":
@@ -101,7 +101,7 @@ class Client:
             
         elif message_type == "Grid_NOT_ALLOWED":
             self.allow_move = False
-        elif message_type == "GAME_OVER":
+        if message_type == "GAME_OVER":
             winner_id = str(message_parts[1])
             print(f"Game is over, Player: {winner_id} is Win!")
             #update game_staus,winner
