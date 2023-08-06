@@ -118,21 +118,21 @@ class Server:
         return flag
 
     def handle_player(self, player_name):
-        
+        # this function handle the message from Client
         player_id = self.players_id[player_name]
         player = self.get_player(player_id)
-        socket = player["socket"]
+        socket = player["socket"] # got the sender's socket 
         self.send_player_info(player_id)
         
-        while True:
+        while True: # keep recv while server running 
             try:
-                data = socket.recv(2048)
+                data = socket.recv(2048) # accept 2048 bytes one time
                 if data:
                     decoded_data = data.decode()
-                    if "messageEND" in decoded_data:
+                    if "messageEND" in decoded_data: # some msg will end with messageEND, to split msgs if two or more msgs send combined
                         print("execute messageEND")
                         messages = decoded_data.split("messageEND")
-                        for message in messages[:-1]:
+                        for message in messages[:-1]: # split msgs and handle it one by one
                             self.handle_single_message(message, player, socket, player_id)
                     else:
                         print("execute non-messageEND")
@@ -142,25 +142,25 @@ class Server:
                     self.is_connect[player_name] = False
                     break
 
-            except Exception as e:
+            except Exception as e: # catch exception in case error
                 print(f"playing with {player_id} connection error has occurred:{str(e)}")
                 self.is_connect[player_name] = False
                 break
 
     def handle_single_message(self, message, player, socket, player_id):
-        if "Surface" in message:
+        if "Surface" in message: # if surface in msg, means client send a draw to server
             print("Sending messages to all users...")
             for other_player in self.players:
                 if not self.is_connect[other_player["player_name"]]:
                     continue
-                other_player["socket"].send(message.encode())
+                other_player["socket"].send(message.encode()) # server need to send the draw to every player
             if self.is_game_over():
                 self.handle_game_over()
             print("Sending Data END")
 
         message_parts = message.split(",")
 
-        if message_parts[0] == "Initial":
+        if message_parts[0] == "Initial": # when Client initial the game, server will send the current grid to the new player
             print("Initializing the board for the players...."+str(player))
             self.update_and_send_player_list()
             if len(self.surface_list) > 0:
@@ -169,7 +169,7 @@ class Server:
                     player["socket"].send(surface)
             print("Initialization complete.")
 
-        if message_parts[0] == "Confirm":
+        if message_parts[0] == "Confirm": # handle draw content over 50%, add grid to confirmed grid list
             print("in Confirm, -- msg1 is: " + str(message_parts))
             row, column, id = int(message_parts[1]), int(message_parts[2]), int(message_parts[3])
             cell = (row, column, id)
@@ -177,7 +177,7 @@ class Server:
                 self.confirmed_grid.append(cell)
             print(len(self.confirmed_grid))
 
-        if message_parts[0] == "gridRequest":
+        if message_parts[0] == "gridRequest": # handle grid request, if the grid is available, will send allow to client.
             print("in gridRequest -- msg1 is: " + str(message_parts))
             row, column, player_id = int(message_parts[1]), int(message_parts[2]), int(message_parts[3])
             if self.grid_check(row, column, player_id):
@@ -186,7 +186,7 @@ class Server:
             else:
                 socket.send("Grid_NOT_ALLOWED".encode())
 
-        if "Surface" in message_parts[0]:
+        if "Surface" in message_parts[0]: # add surface to surface list, in order to send the newest grid-board to new player
             if message.encode() not in self.surface_list:
                 self.surface_list.append(message.encode())
                 print("len of surface is: "+str(len(self.surface_list)))
